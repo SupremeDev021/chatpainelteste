@@ -7,32 +7,18 @@ const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_U
 
 let clienteLogado = null;
 
-// Configuração central do "Painel Camaleão" - Define o que cada nicho vê
-const CONFIG_POR_NICHO = {
-    "clinica": [
-        { id: "dashboard", icon: "fa-chart-pie", name: "Dashboard" },
-        { id: "inbox", icon: "fa-comments", name: "Atendimentos" },
-        { id: "agenda", icon: "fa-calendar-check", name: "Agenda de Consultas" },
-        { id: "crm", icon: "fa-bullseye", name: "CRM" },
-        { id: "automations", icon: "fa-robot", name: "Automações" },
-        { id: "settings", icon: "fa-sliders", name: "Configurações" }
-    ],
-    "restaurante": [
-        { id: "dashboard", icon: "fa-chart-pie", name: "Dashboard" },
-        { id: "inbox", icon: "fa-comments", name: "Atendimentos" },
-        { id: "pedidos", icon: "fa-motorcycle", name: "Gestão de Pedidos" },
-        { id: "cardapio", icon: "fa-burger", name: "Cardápio" },
-        { id: "automations", icon: "fa-robot", name: "Automações" },
-        { id: "settings", icon: "fa-sliders", name: "Configurações" }
-    ],
-    "padrao": [ // Usado se o segmento não tiver configuração específica
-        { id: "dashboard", icon: "fa-chart-pie", name: "Dashboard" },
-        { id: "inbox", icon: "fa-comments", name: "Atendimentos" },
-        { id: "crm", icon: "fa-bullseye", name: "CRM Visual" },
-        { id: "automations", icon: "fa-robot", name: "Automações" },
-        { id: "management", icon: "fa-building", name: "Gestão" },
-        { id: "settings", icon: "fa-sliders", name: "Configurações" }
-    ]
+// DICIONÁRIO DE MÓDULOS (O Painel Camaleão usa isso para montar as telas)
+const TODOS_MODULOS = {
+    "dashboard": { id: "dashboard-leads", icon: "fa-chart-pie", name: "Dashboard Leads" },
+    "dashboard-agendamentos": { id: "dashboard-agendamentos", icon: "fa-chart-line", name: "Dash Agendamentos" },
+    "inbox": { id: "inbox", icon: "fa-comments", name: "Atendimentos" },
+    "crm": { id: "crm", icon: "fa-diagram-project", name: "CRM Visual" },
+    "agenda": { id: "agenda", icon: "fa-calendar-check", name: "Agenda Inteligente" },
+    "pedidos": { id: "pedidos", icon: "fa-motorcycle", name: "Delivery / Pedidos" },
+    "cardapio": { id: "cardapio", icon: "fa-burger", name: "Cardápio" },
+    "automations": { id: "automations", icon: "fa-wand-magic-sparkles", name: "Automações" },
+    "management": { id: "management", icon: "fa-building-shield", name: "Gestão Empresarial" },
+    "settings": { id: "settings", icon: "fa-sliders", name: "Configurações" }
 };
 
 // ==========================================================================
@@ -116,7 +102,7 @@ const SupremeUI = {
 // 3. ESTADO GLOBAL DA APLICAÇÃO (STATE)
 // ==========================================================================
 const state = {
-  activeModule: "dashboard",
+  activeModule: "",
   activeFilter: "all",
   activeConversationId: "conv-001",
   isInternalNote: false,
@@ -126,39 +112,27 @@ const state = {
   conversations: [
     {
       id: "conv-001", status: "open", assignedTo: "Ana Sales", lastAt: "09:42", unread: 2,
-      contact: { name: "Mariana Costa", initials: "MC", company: "Costa Beauty Clinic", channel: "whatsapp", phone: "+55 11 98888-1200", tags: ["Lead quente", "Automação", "WhatsApp"], sentiment: "Positivo", value: 6800 },
+      contact: { name: "Mariana Costa", initials: "MC", company: "Costa Beauty Clinic", channel: "whatsapp", phone: "+55 11 98888-1200", tags: ["Lead quente", "Automação"], sentiment: "Positivo", value: 6800 },
       messages: [
-        { type: "in", text: "Olá, vi a Supreme Tech no Instagram. Quero automatizar o atendimento da minha clínica pelo WhatsApp.", time: "09:31" },
-        { type: "out", text: "Olá, Mariana! Perfeito. Conseguimos integrar WhatsApp, IA, CRM e automações para sua clínica. Hoje vocês recebem muitos leads por dia?", time: "09:34" },
-        { type: "in", text: "Sim, recebemos em média 40 mensagens por dia e perdemos muitas por demora no retorno.", time: "09:42" }
-      ]
-    },
-    {
-      id: "conv-002", status: "pending", assignedTo: "Bruno CX", lastAt: "10:08", unread: 0,
-      contact: { name: "Rafael Mendes", initials: "RM", company: "Mendes Imóveis", channel: "instagram", phone: "+55 21 97777-4400", tags: ["CRM", "Pipeline"], sentiment: "Neutro", value: 9200 },
-      messages: [
-        { type: "in", text: "Preciso organizar meus corretores em um funil de vendas. Vocês têm CRM visual?", time: "09:58" },
-        { type: "note", text: "Cliente pediu demonstração ainda esta semana. Priorizar follow-up.", time: "10:08" }
+        { type: "in", text: "Olá, vi a Supreme Tech no Instagram. Quero automatizar o atendimento.", time: "09:31" },
+        { type: "out", text: "Olá, Mariana! Perfeito. Hoje vocês recebem muitos leads?", time: "09:34" },
+        { type: "in", text: "Sim, perdemos muitas por demora no retorno.", time: "09:42" }
       ]
     }
   ],
 
   opportunities: [
     { id: "opp-001", title: "Automação WhatsApp + IA", company: "Costa Beauty Clinic", value: 6800, stage: "Novo Lead", probability: 35, owner: "Ana Sales" },
-    { id: "opp-002", title: "CRM para corretores", company: "Mendes Imóveis", value: 9200, stage: "Qualificação", probability: 55, owner: "Bruno CX" },
-    { id: "opp-003", title: "IA para suporte educacional", company: "JR Educação", value: 3900, stage: "Proposta", probability: 70, owner: "Carla Suporte" },
-    { id: "opp-004", title: "Integração ERP Enterprise", company: "Lima Distribuidora", value: 14700, stage: "Fechado", probability: 100, owner: "Ana Sales" }
+    { id: "opp-002", title: "CRM para corretores", company: "Mendes Imóveis", value: 9200, stage: "Qualificação", probability: 55, owner: "Bruno CX" }
   ],
 
   automations: [
     { id: "auto-001", name: "Novo lead WhatsApp", description: "Cria contato, aplica tag, envia saudação e abre oportunidade no CRM.", icon: "fa-brands fa-whatsapp", active: true },
-    { id: "auto-002", name: "Follow-up inteligente", description: "Detecta conversas sem resposta e agenda follow-up automático.", icon: "fa-solid fa-clock-rotate-left", active: true },
-    { id: "auto-003", name: "Resumo pós-atendimento", description: "Gera resumo, classifica sentimento e atualiza histórico do cliente.", icon: "fa-solid fa-brain", active: false }
+    { id: "auto-002", name: "Follow-up inteligente", description: "Detecta conversas sem resposta e agenda follow-up automático.", icon: "fa-solid fa-clock-rotate-left", active: true }
   ],
 
   contracts: [
-    { client: "Costa Beauty Clinic", plan: "Automation Pro", status: "Em negociação", mrr: 1890, due: "15/07/2026" },
-    { client: "Mendes Imóveis", plan: "CRM Enterprise", status: "Proposta enviada", mrr: 2490, due: "22/07/2026" }
+    { client: "Costa Beauty Clinic", plan: "Automation Pro", status: "Em negociação", mrr: 1890, due: "15/07/2026" }
   ]
 };
 
@@ -171,22 +145,18 @@ function initApp() {
   const sessaoSalva = localStorage.getItem(SUPREME_STORAGE_KEYS.sessao);
   
   if (sessaoSalva) {
-      // Já está logado
       iniciarSessao(JSON.parse(sessaoSalva));
   } else {
-      // Não está logado, mostra tela de login e esconde o painel
       document.getElementById('login-screen').style.display = 'flex';
       document.querySelector('.app-shell').style.display = 'none';
   }
 
-  // Prepara formulário de login (se existir na tela)
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
       loginForm.addEventListener('submit', realizarLogin);
   }
 }
 
-// LÓGICA DE LOGIN UNIFICADA
 async function realizarLogin(e) {
     e.preventDefault();
     if (!supabaseClient) return showTechToast("Supabase não configurado.", "error");
@@ -198,7 +168,6 @@ async function realizarLogin(e) {
     
     btn.innerText = "Autenticando...";
 
-    // Simulação ou chamada real ao Supabase (Adaptado da sua estrutura Admin)
     const { data: cliente, error } = await supabaseClient
         .from('clientes')
         .select('*')
@@ -210,40 +179,30 @@ async function realizarLogin(e) {
 
     if (cliente) {
         if (cliente.status === 'suspenso') {
-            showTechToast("⛔ Acesso Suspenso. Contate a Supreme-Tech.", "error");
+            showTechToast("⛔ Acesso Suspenso. Contate a administração.", "error");
             return;
         }
         iniciarSessao(cliente);
     } else {
-        showTechToast("Acesso Negado. Credenciais inválidas.", "error");
+        document.getElementById('login-error').style.display = 'block';
     }
 }
 
-// PREPARA O PAINEL DE ACORDO COM A EMPRESA
 function iniciarSessao(dadosCliente) {
     clienteLogado = dadosCliente;
     localStorage.setItem(SUPREME_STORAGE_KEYS.sessao, JSON.stringify(dadosCliente));
 
-    // Ocultar login, exibir App
-    const loginScreen = document.getElementById('login-screen');
-    const appShell = document.querySelector('.app-shell');
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (appShell) appShell.style.display = 'flex';
+    document.getElementById('login-screen').style.display = 'none';
+    document.querySelector('.app-shell').style.display = 'flex';
 
     showTechToast(`Bem-vindo, ${clienteLogado.nome_empresa}!`, "success");
 
-    // 1. CARREGAR WHITE-LABEL DINÂMICO
-    loadSavedWhiteLabel(); // Tenta carregar local, mas numa versão avançada puxaria do 'dadosCliente'
-
-    // 2. CONSTRUIR O MENU CAMALEÃO (Dicionário de Nichos)
+    loadSavedWhiteLabel(); 
+    
+    // O CORAÇÃO DO SISTEMA CAMALEÃO - Monta os menus baseados no DB
     renderSidebar(clienteLogado.segmento);
 
-    // 3. INJETAR CHATWOOT (Exemplo de como ficaria a integração invisível)
-    // initChatwootWidget(clienteLogado.nome_instancia);
-
-    // 4. RENDERIZAR O MÓDULO INICIAL
     bindEvents();
-    setActiveModule("dashboard");
 }
 
 function fazerLogout() {
@@ -251,39 +210,93 @@ function fazerLogout() {
     localStorage.removeItem(SUPREME_STORAGE_KEYS.sessao);
     document.querySelector('.app-shell').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-form').reset();
 }
 
-function renderSidebar(segmento) {
-    const sidebarMenu = document.querySelector('.saas-menu');
+// --------------------------------------------------------------------------
+// MOTOR DE RENDERIZAÇÃO DINÂMICA DE MÓDULOS
+// --------------------------------------------------------------------------
+function renderSidebar(segmentosString) {
+    const sidebarMenu = document.getElementById('dynamic-menu');
     if (!sidebarMenu) return;
 
-    sidebarMenu.innerHTML = ''; // Limpa menu atual
+    sidebarMenu.innerHTML = ''; 
     
-    // Pega a lista de módulos baseada no nicho da empresa, ou 'padrao' se não achar
-    const modulos = CONFIG_POR_NICHO[segmento] || CONFIG_POR_NICHO["padrao"];
+    // Se o cliente não tiver segmento salvo, usa um fallback seguro
+    const modulosAtivos = (segmentosString || "dashboard,inbox,settings").split(',');
 
-    modulos.forEach(mod => {
-        sidebarMenu.innerHTML += `
-            <button class="saas-btn" data-module="${mod.id}" title="${mod.name}" type="button">
-                <i class="fa-solid ${mod.icon}"></i>
-            </button>
-        `;
+    let primeiroModuloAutorizado = null;
+
+    modulosAtivos.forEach(modKey => {
+        const chaveLimpa = modKey.trim();
+        const configModulo = TODOS_MODULOS[chaveLimpa];
+
+        if (configModulo) {
+            // Guarda o ID do primeiro módulo liberado para abrir a tela automaticamente
+            if(!primeiroModuloAutorizado) {
+                primeiroModuloAutorizado = configModulo.id;
+            }
+
+            // Desenha o botão na barra lateral
+            sidebarMenu.innerHTML += `
+                <button class="saas-btn" data-module="${configModulo.id}" title="${configModulo.name}" type="button">
+                    <i class="fa-solid ${configModulo.icon}"></i>
+                </button>
+            `;
+        }
     });
 
-    // Re-bind click events for the newly created buttons
+    // Adiciona evento de clique nos novos botões gerados
     sidebarMenu.querySelectorAll('.saas-btn').forEach(btn => {
         btn.addEventListener('click', () => setActiveModule(btn.dataset.module));
     });
+
+    // Navega para a primeira tela disponível daquele cliente
+    if (primeiroModuloAutorizado) {
+        setActiveModule(primeiroModuloAutorizado);
+    }
+}
+
+function setActiveModule(moduleName) {
+    if(!moduleName) return;
+    state.activeModule = moduleName;
+
+    // 1. Atualiza cor do botão ativo no menu
+    document.querySelectorAll(".saas-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.module === moduleName);
+    });
+
+    // 2. Trava de Segurança: Esconde TODOS os painéis
+    document.querySelectorAll(".app-module").forEach((section) => {
+        section.classList.remove("active");
+    });
+
+    // 3. Mostra apenas o painel solicitado
+    const activeSection = document.getElementById(`module-${moduleName}`);
+    if (activeSection) {
+        activeSection.classList.add("active");
+    }
+
+    // 4. Executa a função de renderização de dados específica daquele módulo
+    if (moduleName === "dashboard-leads") renderDashboardLeads();
+    if (moduleName === "dashboard-agendamentos") renderDashboardAgendamentos();
+    if (moduleName === "crm") renderKanban();
+    if (moduleName === "automations") renderAutomations();
+    if (moduleName === "inbox") {
+        renderConversations();
+        renderActiveConversation();
+    }
 }
 
 function bindEvents() {
-  // Os eventos do Sidebar agora são criados no renderSidebar(), mas mantemos para navegação interna
   document.querySelectorAll("[data-module-open]").forEach((button) => {
     button.addEventListener("click", () => setActiveModule(button.dataset.moduleOpen));
   });
 
-  const btnRefresh = document.getElementById("btn-refresh-dashboard");
-  if(btnRefresh) btnRefresh.addEventListener("click", () => { renderDashboard(); showTechToast("Atualizado.", "info"); });
+  const bindIfExists = (id, event, func) => { const el = document.getElementById(id); if(el) el.addEventListener(event, func); };
+
+  bindIfExists("btn-refresh-dashboard", "click", () => { renderDashboardLeads(); showTechToast("Atualizado.", "info"); });
+  bindIfExists("btn-refresh-agenda-dash", "click", () => { renderDashboardAgendamentos(); showTechToast("Métricas da agenda atualizadas.", "info"); });
 
   const searchInput = document.getElementById("conversation-search");
   if(searchInput) searchInput.addEventListener("input", () => renderConversations());
@@ -330,9 +343,6 @@ function bindEvents() {
       });
   }
 
-  // Bind dinâmico verificando se os botões existem
-  const bindIfExists = (id, event, func) => { const el = document.getElementById(id); if(el) el.addEventListener(event, func); };
-  
   bindIfExists("btn-ai-suggestion", "click", applyAISuggestion);
   bindIfExists("btn-ai-summary", "click", generateAISummary);
   bindIfExists("btn-analyze-sentiment", "click", analyzeSentiment);
@@ -367,37 +377,12 @@ function bindEvents() {
 }
 
 // ==========================================================================
-// 5. FUNÇÕES DE RENDERIZAÇÃO E NEGÓCIO
+// 5. FUNÇÕES DE RENDERIZAÇÃO DE DADOS (KPIs, CRM, Chat)
 // ==========================================================================
 
-function setActiveModule(moduleName) {
-  state.activeModule = moduleName;
-
-  document.querySelectorAll(".saas-btn").forEach((button) => {
-    button.classList.toggle("active", button.dataset.module === moduleName);
-  });
-
-  document.querySelectorAll(".app-module").forEach((section) => {
-    section.classList.remove("active");
-  });
-
-  const activeSection = document.getElementById(`module-${moduleName}`);
-  if (activeSection) {
-    activeSection.classList.add("active");
-  }
-
-  if (moduleName === "dashboard") renderDashboard();
-  if (moduleName === "crm") renderKanban();
-  if (moduleName === "automations") renderAutomations();
-  if (moduleName === "inbox") {
-      renderConversations();
-      renderActiveConversation();
-  }
-}
-
-function renderDashboard() {
+function renderDashboardLeads() {
   const kpiLeads = document.getElementById("kpi-leads");
-  if(!kpiLeads) return; // Se a tela não foi injetada, aborta.
+  if(!kpiLeads) return; 
 
   const leads = state.conversations.length + 12;
   const conversions = state.opportunities.filter((opportunity) => opportunity.stage === "Fechado").length;
@@ -426,6 +411,14 @@ function renderDashboard() {
 
   const insightsContainer = document.getElementById("dashboard-insights");
   if(insightsContainer) insightsContainer.innerHTML = insights.map((item) => `<li>${escapeHTML(item)}</li>`).join("");
+}
+
+function renderDashboardAgendamentos() {
+    // Exemplo de injeção de dados simulados (No futuro virá do n8n/banco)
+    setText("kpi-consultas-hoje", "14");
+    setText("kpi-consultas-confirmadas", "12");
+    setText("kpi-consultas-canceladas", "2");
+    setText("kpi-comparecimento", "88%");
 }
 
 function renderConversations() {
@@ -579,12 +572,12 @@ function applyAISuggestion() {
 function createAISuggestion(conversation) {
   const value = conversation.contact.value;
   if (conversation.contact.sentiment === "Preocupado") {
-    return "Entendo sua preocupação. Para garantir segurança e qualidade, podemos configurar limites de resposta, base de conhecimento aprovada e transferência para humano quando a IA identificar baixa confiança.";
+    return "Entendo sua preocupação. Para garantir segurança, podemos configurar limites de resposta para a IA.";
   }
   if (value >= 8000) {
-    return "Pelo volume e potencial da sua operação, recomendo uma implantação com CRM visual, automações de follow-up e IA para qualificação dos leads. Posso montar uma proposta premium personalizada para você.";
+    return "Recomendo uma implantação com CRM visual, automações de follow-up e IA para qualificação dos leads.";
   }
-  return "Perfeito. Podemos estruturar uma solução com atendimento integrado, histórico inteligente e automações para reduzir tempo de resposta e aumentar conversões.";
+  return "Perfeito. Podemos estruturar uma solução com atendimento integrado e automações.";
 }
 
 function generateAISummary() {
@@ -592,14 +585,14 @@ function generateAISummary() {
   if (!conversation) return showTechToast("Selecione uma conversa para resumir.", "error");
 
   const lastInbound = [...conversation.messages].reverse().find((message) => message.type === "in");
-  const summary = `Resumo IA: ${conversation.contact.name} da empresa ${conversation.contact.company} demonstrou interesse em ${conversation.contact.tags.join(", ")}. Valor estimado: ${formatCurrency(conversation.contact.value)}. Último ponto relevante: "${lastInbound ? lastInbound.text : "sem mensagem recente"}".`;
+  const summary = `Resumo IA: ${conversation.contact.name} da empresa ${conversation.contact.company} tem interesse em automação. Última msg: "${lastInbound ? lastInbound.text : ""}".`;
 
   const output = document.getElementById("ai-summary-output");
   if(output) {
       output.textContent = summary;
       output.dataset.generated = "true";
   }
-  showTechToast("Resumo automático gerado pela IA.", "success");
+  showTechToast("Resumo gerado pela IA.", "success");
 }
 
 function analyzeSentiment() {
@@ -629,7 +622,7 @@ function resolveConversation() {
 
   renderConversations();
   renderActiveConversation();
-  renderDashboard();
+  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
   showTechToast("Atendimento marcado como resolvido.", "success");
 }
 
@@ -637,7 +630,7 @@ function createMockConversation() {
   const id = `conv-${String(state.conversations.length + 1).padStart(3, "0")}`;
   const conversation = {
     id, status: "open", assignedTo: "IA Copilot", lastAt: getCurrentTime(), unread: 1,
-    contact: { name: "Novo Lead Premium", initials: "NL", company: "Empresa em Qualificação", channel: "whatsapp", phone: "+55 11 90000-0000", email: "lead@empresa.com", tags: ["Novo", "IA", "Qualificação"], sentiment: "Neutro", value: 5200 },
+    contact: { name: "Novo Lead Premium", initials: "NL", company: "Empresa Local", channel: "whatsapp", phone: "+55 11 90000-0000", tags: ["Novo Lead"], sentiment: "Neutro", value: 5200 },
     messages: [{ type: "in", text: "Olá, quero conhecer as soluções da Supreme Tech.", time: getCurrentTime() }]
   };
 
@@ -646,7 +639,7 @@ function createMockConversation() {
 
   renderConversations();
   renderActiveConversation();
-  renderDashboard();
+  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
   showTechToast("Nova conversa criada para demonstração.", "success");
 }
 
@@ -707,18 +700,18 @@ function handleKanbanDrop(event) {
 
   state.draggedOpportunityId = null;
   renderKanban();
-  renderDashboard();
+  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
   showTechToast(`Oportunidade movida para ${opportunity.stage}.`, "success");
 }
 
 function createOpportunity() {
   const id = `opp-${String(state.opportunities.length + 1).padStart(3, "0")}`;
   state.opportunities.unshift({
-    id, title: "Nova solução SaaS personalizada", company: "Lead Enterprise", value: 7500, stage: "Novo Lead", probability: 25, owner: "Ana Sales"
+    id, title: "Nova solução SaaS", company: "Lead Enterprise", value: 7500, stage: "Novo Lead", probability: 25, owner: "Ana Sales"
   });
 
   renderKanban();
-  renderDashboard();
+  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
   showTechToast("Nova oportunidade criada no CRM.", "success");
 }
 
@@ -745,29 +738,11 @@ function toggleAutomation(id) {
 function createAutomation() {
   const id = `auto-${String(state.automations.length + 1).padStart(3, "0")}`;
   state.automations.push({
-    id, name: "Webhook para CRM externo", description: "Envia eventos de conversa e oportunidade para sistemas externos via webhook.", icon: "fa-solid fa-plug-circle-bolt", active: false
+    id, name: "Webhook para CRM externo", description: "Envia eventos de conversa.", icon: "fa-solid fa-plug-circle-bolt", active: false
   });
 
   renderAutomations();
   showTechToast("Nova automação criada.", "success");
-}
-
-function renderContracts() {
-  const table = document.getElementById("contracts-table");
-  if(!table) return;
-  table.innerHTML = state.contracts
-    .map((contract) => {
-      const statusClass = contract.status === "Ativo" ? "status-open" : contract.status === "Proposta enviada" ? "status-pending" : "status-resolved";
-      return `
-        <tr>
-          <td>${escapeHTML(contract.client)}</td>
-          <td>${escapeHTML(contract.plan)}</td>
-          <td><span class="badge ${statusClass}">${escapeHTML(contract.status)}</span></td>
-          <td>${formatCurrency(contract.mrr)}</td>
-          <td>${escapeHTML(contract.due)}</td>
-        </tr>
-      `;
-    }).join("");
 }
 
 // ==========================================================================
@@ -798,9 +773,9 @@ function handleLogoUpload(event) {
     if(fileNameDisplay) fileNameDisplay.textContent = file.name;
     const clientLogo = document.getElementById("client-logo-sidebar");
     if(clientLogo) clientLogo.src = state.uploadedLogoDataUrl;
-    showTechToast("Logomarca carregada. Clique em aplicar para salvar.", "info");
+    showTechToast("Logomarca carregada. Clique em aplicar.", "info");
   };
-  reader.onerror = () => showTechToast("Não foi possível carregar a imagem.", "error");
+  reader.onerror = () => showTechToast("Erro ao carregar.", "error");
   reader.readAsDataURL(file);
 }
 
@@ -821,7 +796,7 @@ function applyWhiteLabel() {
   let finalLogo = state.uploadedLogoDataUrl || (clientLogo ? clientLogo.src : '');
 
   if (logoUrl) {
-    if (!isValidURL(logoUrl)) return showTechToast("URL da logomarca inválida.", "error");
+    if (!isValidURL(logoUrl)) return showTechToast("URL inválida.", "error");
     finalLogo = logoUrl;
   }
 
@@ -871,26 +846,11 @@ function saveBackendConfig() {
   const backendURL = document.getElementById("backend-url")?.value.trim() || '';
   const accountId = document.getElementById("chatwoot-account")?.value.trim() || '';
 
-  if (backendURL && !isValidURL(backendURL)) return showTechToast("URL do backend inválida.", "error");
+  if (backendURL && !isValidURL(backendURL)) return showTechToast("URL inválida.", "error");
 
   const config = { backendURL, accountId };
   localStorage.setItem(SUPREME_STORAGE_KEYS.backend, JSON.stringify(config));
-  showTechToast("Conexão segura salva. Token deve permanecer no backend.", "success");
-}
-
-function loadSavedBackendConfig() {
-  const rawConfig = localStorage.getItem(SUPREME_STORAGE_KEYS.backend);
-  if (!rawConfig) return;
-
-  try {
-    const config = JSON.parse(rawConfig);
-    const backendInput = document.getElementById("backend-url");
-    const accountInput = document.getElementById("chatwoot-account");
-    if(backendInput) backendInput.value = config.backendURL || "";
-    if(accountInput) accountInput.value = config.accountId || "";
-  } catch {
-    localStorage.removeItem(SUPREME_STORAGE_KEYS.backend);
-  }
+  showTechToast("Conexão segura salva.", "success");
 }
 
 function saveAIConfig() {
@@ -898,50 +858,23 @@ function saveAIConfig() {
   const autoSummaryInput = document.getElementById("ai-autosummary");
   if(!toneInput || !autoSummaryInput) return;
 
-  const tone = toneInput.value;
-  const autosummary = autoSummaryInput.value;
-
-  localStorage.setItem(SUPREME_STORAGE_KEYS.ai, JSON.stringify({ tone, autosummary }));
+  localStorage.setItem(SUPREME_STORAGE_KEYS.ai, JSON.stringify({ tone: toneInput.value, autosummary: autoSummaryInput.value }));
   showTechToast("Configurações de IA salvas.", "success");
-}
-
-function loadSavedAIConfig() {
-  const rawConfig = localStorage.getItem(SUPREME_STORAGE_KEYS.ai);
-  if (!rawConfig) return;
-
-  try {
-    const config = JSON.parse(rawConfig);
-    const toneInput = document.getElementById("ai-tone");
-    const autoSummaryInput = document.getElementById("ai-autosummary");
-    if (config.tone && toneInput) toneInput.value = config.tone;
-    if (config.autosummary && autoSummaryInput) autoSummaryInput.value = config.autosummary;
-  } catch {
-    localStorage.removeItem(SUPREME_STORAGE_KEYS.ai);
-  }
 }
 
 // ==========================================================================
 // 7. FUNÇÕES UTILITÁRIAS E FORMATADORES
 // ==========================================================================
 
-function getActiveConversation() {
-  return state.conversations.find((conversation) => conversation.id === state.activeConversationId);
-}
-
-function getLastMessage(conversation) {
-  return conversation.messages[conversation.messages.length - 1] || { text: "", time: "" };
-}
+function getActiveConversation() { return state.conversations.find((c) => c.id === state.activeConversationId); }
+function getLastMessage(c) { return c.messages[c.messages.length - 1] || { text: "", time: "" }; }
+function getStatusLabel(s) { const labels = { open: "Aberto", pending: "Pendente", resolved: "Resolvido" }; return labels[s] || s; }
 
 function getChannelBadge(channel) {
   const normalized = channel.toLowerCase();
   if (normalized === "whatsapp") return '<span class="badge whatsapp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</span>';
   if (normalized === "instagram") return '<span class="badge instagram"><i class="fa-brands fa-instagram"></i> Instagram</span>';
   return '<span class="badge email"><i class="fa-solid fa-envelope"></i> E-mail</span>';
-}
-
-function getStatusLabel(status) {
-  const labels = { open: "Aberto", pending: "Pendente", resolved: "Resolvido" };
-  return labels[status] || status;
 }
 
 function showTechToast(message, type = "info") {
@@ -952,88 +885,32 @@ function showTechToast(message, type = "info") {
       document.body.appendChild(container);
   }
   const toast = document.createElement("div");
-
   const normalizedType = ["success", "error", "info"].includes(type) ? type : "info";
   const iconClass = normalizedType === "success" ? "fa-circle-check" : normalizedType === "error" ? "fa-circle-xmark" : "fa-circle-info";
 
   toast.className = `tech-toast toast-${normalizedType}`;
-
-  const icon = document.createElement("div");
-  icon.className = "toast-icon";
-  const iconElement = document.createElement("i");
-  iconElement.className = `fa-solid ${iconClass}`;
-  icon.appendChild(iconElement);
-
-  const body = document.createElement("div");
-  body.className = "toast-body";
-  const title = document.createElement("h4");
-  title.textContent = normalizedType === "success" ? "Sucesso" : normalizedType === "error" ? "Atenção" : "Informação";
-  const text = document.createElement("p");
-  text.textContent = message;
-
-  const progress = document.createElement("div");
-  progress.className = "toast-progress";
-
-  body.appendChild(title);
-  body.appendChild(text);
-
-  toast.appendChild(icon);
-  toast.appendChild(body);
-  toast.appendChild(progress);
-
+  toast.innerHTML = `
+      <div class="toast-icon"><i class="fa-solid ${iconClass}"></i></div>
+      <div class="toast-body"><h4>${normalizedType === "success" ? "Sucesso" : normalizedType === "error" ? "Atenção" : "Informação"}</h4><p>${message}</p></div>
+      <div class="toast-progress"></div>
+  `;
   container.appendChild(toast);
-
   requestAnimationFrame(() => toast.classList.add("show"));
-
-  window.setTimeout(() => {
-    toast.classList.remove("show");
-    window.setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  window.setTimeout(() => { toast.classList.remove("show"); window.setTimeout(() => toast.remove(), 300); }, 4000);
 }
 
-function setText(id, text) {
-  const element = document.getElementById(id);
-  if (element) element.textContent = text;
-}
-
-function escapeHTML(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(Number(value) || 0);
-}
-
-function getCurrentTime() {
-  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
-}
-
-function capitalize(value) {
-  const stringValue = String(value || "");
-  if (!stringValue) return "";
-  return stringValue.charAt(0).toUpperCase() + stringValue.slice(1);
-}
-
-function isValidURL(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function lightenHex(hex, percentage) {
-  const normalized = hex.replace("#", "");
-  if (normalized.length !== 6) return hex;
-  const number = parseInt(normalized, 16);
-  const red = Math.min(255, (number >> 16) + Math.round(255 * (percentage / 100)));
-  const green = Math.min(255, ((number >> 8) & 255) + Math.round(255 * (percentage / 100)));
-  const blue = Math.min(255, (number & 255) + Math.round(255 * (percentage / 100)));
-  return `#${((1 << 24) + (red << 16) + (green << 8) + blue).toString(16).slice(1)}`;
+function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+function escapeHTML(val) { return String(val).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
+function formatCurrency(val) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(Number(val) || 0); }
+function getCurrentTime() { return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date()); }
+function capitalize(val) { const str = String(val || ""); if (!str) return ""; return str.charAt(0).toUpperCase() + str.slice(1); }
+function isValidURL(val) { try { const url = new URL(val); return url.protocol === "http:" || url.protocol === "https:"; } catch { return false; } }
+function lightenHex(hex, pct) {
+  const norm = hex.replace("#", "");
+  if (norm.length !== 6) return hex;
+  const num = parseInt(norm, 16);
+  const r = Math.min(255, (num >> 16) + Math.round(255 * (pct / 100)));
+  const g = Math.min(255, ((num >> 8) & 255) + Math.round(255 * (pct / 100)));
+  const b = Math.min(255, (num & 255) + Math.round(255 * (pct / 100)));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
