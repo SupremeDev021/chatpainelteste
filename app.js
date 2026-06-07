@@ -1,916 +1,914 @@
-// ==========================================================================
-// 0. CONEXÃO SUPABASE E CONFIGURAÇÕES GERAIS
-// ==========================================================================
-const SUPABASE_URL = 'https://hhyvtehbsfoeuagwhklm.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_S9oWEYBafLstrVI2SJQ9uA_ijH5Ph9e';
-const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const STORAGE_KEY = "supreme_platform_state_v2";
+const SESSION_KEY = "supreme_client_session_v2";
+const SESSION_TIMEOUT_MS = 1000 * 60 * 60 * 4;
 
-let clienteLogado = null;
-
-// DICIONÁRIO DE MÓDULOS (O Painel Camaleão usa isso para montar as telas)
-const TODOS_MODULOS = {
-    "dashboard": { id: "dashboard-leads", icon: "fa-chart-pie", name: "Dashboard Leads" },
-    "dashboard-agendamentos": { id: "dashboard-agendamentos", icon: "fa-chart-line", name: "Dash Agendamentos" },
-    "inbox": { id: "inbox", icon: "fa-comments", name: "Atendimentos" },
-    "crm": { id: "crm", icon: "fa-diagram-project", name: "CRM Visual" },
-    "agenda": { id: "agenda", icon: "fa-calendar-check", name: "Agenda Inteligente" },
-    "pedidos": { id: "pedidos", icon: "fa-motorcycle", name: "Delivery / Pedidos" },
-    "cardapio": { id: "cardapio", icon: "fa-burger", name: "Cardápio" },
-    "automations": { id: "automations", icon: "fa-wand-magic-sparkles", name: "Automações" },
-    "management": { id: "management", icon: "fa-building-shield", name: "Gestão Empresarial" },
-    "settings": { id: "settings", icon: "fa-sliders", name: "Configurações" }
+const MODULES = {
+  dashboard: { label: "Dashboard", icon: "layout-dashboard" },
+  inbox: { label: "Atendimentos", icon: "messages-square" },
+  crm: { label: "CRM visual", icon: "git-branch" },
+  agenda: { label: "Agenda", icon: "calendar-days" },
+  management: { label: "Gestao empresarial", icon: "building-2" },
+  automations: { label: "Automacoes", icon: "workflow" },
+  marketplace: { label: "Marketplace", icon: "shopping-bag" },
+  settings: { label: "Configuracoes", icon: "settings" }
 };
 
-// ==========================================================================
-// 1. CHAVES DE ARMAZENAMENTO (LOCAL STORAGE)
-// ==========================================================================
-const SUPREME_STORAGE_KEYS = {
-  whiteLabel: "supreme_whitelabel_config",
-  backend: "supreme_backend_config",
-  ai: "supreme_ai_config",
-  sessao: "sessao_supreme_cliente"
+const PERMISSION_ACTIONS = ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"];
+const ROLE_PRESETS = {
+  proprietario: allPermissions(),
+  administrador: allPermissions(),
+  gerente: permissions(["view", "create", "edit", "export"]),
+  supervisor: permissions(["view", "edit", "export"]),
+  atendente: modulePermissions(["dashboard", "inbox", "agenda", "crm"], ["view", "create", "edit"]),
+  financeiro: modulePermissions(["dashboard", "management"], ["view", "create", "edit", "export"]),
+  comercial: modulePermissions(["dashboard", "crm", "inbox"], ["view", "create", "edit", "export"]),
+  suporte: modulePermissions(["dashboard", "inbox", "agenda"], ["view", "create", "edit"])
 };
 
-// ==========================================================================
-// 2. SUPREME DESIGN SYSTEM - COMPONENT FACTORY (VANILLA JS)
-// ==========================================================================
-const SupremeUI = {
-    chatItem: function({ id, name, initials, preview, time, channel, status, unread, isActive }) {
-        const activeClass = isActive ? 'active' : '';
-        const unreadBadge = unread > 0 ? `<span class="badge status-open">${unread}</span>` : '';
-        
-        return `
-            <button class="chat-item ${activeClass}" type="button" data-conversation-id="${id}">
-                <div class="avatar">${initials}</div>
-                <div class="chat-preview">
-                    <h4><span>${name}</span><span class="chat-time">${time}</span></h4>
-                    <p>${preview}</p>
-                    <div class="chat-meta-line">
-                        ${getChannelBadge(channel)}
-                        <span class="badge status-${status}">${getStatusLabel(status)}</span>
-                        ${unreadBadge}
-                    </div>
-                </div>
-            </button>
-        `;
-    },
-
-    chatMessage: function({ type, text, time }) {
-        const msgClass = type === 'in' ? 'msg-in' : type === 'note' ? 'msg-note' : 'msg-out';
-        const notePrefix = type === 'note' ? '<strong>Nota interna:</strong> ' : '';
-        
-        return `
-            <div class="message ${msgClass}">
-                ${notePrefix}${escapeHTML(text)}
-                <span class="msg-time">${escapeHTML(time)}</span>
-            </div>
-        `;
-    },
-
-    kanbanCard: function({ id, title, company, value, probability }) {
-        return `
-            <article class="k-card" draggable="true" data-opportunity-id="${id}">
-                <h4>${escapeHTML(title)}</h4>
-                <p>${escapeHTML(company)}</p>
-                <div class="k-card-footer">
-                    <span>${formatCurrency(value)}</span>
-                    <span>${probability}%</span>
-                </div>
-            </article>
-        `;
-    },
-
-    automationCard: function({ id, name, description, icon, active }) {
-        const btnClass = active ? 'btn-secondary' : 'btn-ghost';
-        const toggleIcon = active ? 'fa-toggle-on' : 'fa-toggle-off';
-        const statusText = active ? 'Ativa' : 'Inativa';
-
-        return `
-            <article class="automation-card">
-                <div class="automation-icon"><i class="${icon}"></i></div>
-                <h3>${escapeHTML(name)}</h3>
-                <p>${escapeHTML(description)}</p>
-                <button class="btn ${btnClass} full" type="button" data-toggle-automation="${id}">
-                    <i class="fa-solid ${toggleIcon}"></i> ${statusText}
-                </button>
-            </article>
-        `;
-    }
+const ICONS = {
+  activity: "<path d='M22 12h-4l-3 8L9 4l-3 8H2'/>",
+  bell: "<path d='M10.27 21a2 2 0 0 0 3.46 0'/><path d='M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9'/>",
+  "building-2": "<path d='M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18'/><path d='M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2'/><path d='M10 6h4M10 10h4M10 14h4M10 18h4'/>",
+  "calendar-days": "<path d='M8 2v4M16 2v4M3 10h18'/><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01'/>",
+  "calendar-plus": "<path d='M8 2v4M16 2v4M3 10h18'/><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M12 14v6M9 17h6'/>",
+  "check-circle": "<path d='m9 12 2 2 4-4'/><circle cx='12' cy='12' r='10'/>",
+  "chevron-left": "<path d='m15 18-6-6 6-6'/>",
+  "chevron-right": "<path d='m9 18 6-6-6-6'/>",
+  "columns-3": "<rect width='18' height='18' x='3' y='3' rx='2'/><path d='M9 3v18M15 3v18'/>",
+  "folder-plus": "<path d='M12 10v6M9 13h6'/><path d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'/>",
+  "git-branch": "<line x1='6' x2='6' y1='3' y2='15'/><circle cx='18' cy='6' r='3'/><circle cx='6' cy='18' r='3'/><path d='M18 9a9 9 0 0 1-9 9'/>",
+  "layout-dashboard": "<rect width='7' height='9' x='3' y='3' rx='1'/><rect width='7' height='5' x='14' y='3' rx='1'/><rect width='7' height='9' x='14' y='12' rx='1'/><rect width='7' height='5' x='3' y='16' rx='1'/>",
+  "log-in": "<path d='M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'/><path d='m10 17 5-5-5-5'/><path d='M15 12H3'/>",
+  "log-out": "<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/><path d='m16 17 5-5-5-5'/><path d='M21 12H9'/>",
+  "message-square-plus": "<path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h8'/><path d='M19 3v6M16 6h6'/>",
+  "messages-square": "<path d='M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z'/><path d='M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1'/>",
+  "panel-top": "<rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/>",
+  plus: "<path d='M5 12h14M12 5v14'/>",
+  save: "<path d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z'/><path d='M17 21v-8H7v8M7 3v5h8'/>",
+  send: "<path d='m22 2-7 20-4-9-9-4Z'/><path d='M22 2 11 13'/>",
+  settings: "<path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z'/><circle cx='12' cy='12' r='3'/>",
+  "shopping-bag": "<path d='M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z'/><path d='M3 6h18M16 10a4 4 0 0 1-8 0'/>",
+  target: "<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>",
+  "user-plus": "<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M19 8v6M22 11h-6'/>",
+  wand: "<path d='M15 4V2M15 16v-2M8 9H6M20 9h-2M17.8 6.2 19 5M11 13l-7 7M4 20l10.6-10.6a2 2 0 0 0-2.8-2.8L1.2 17.2a2 2 0 0 0 2.8 2.8Z'/>",
+  workflow: "<rect width='8' height='8' x='3' y='3' rx='2'/><rect width='8' height='8' x='13' y='13' rx='2'/><path d='M11 7h4a2 2 0 0 1 2 2v4'/>"
 };
 
-// ==========================================================================
-// 3. ESTADO GLOBAL DA APLICAÇÃO (STATE)
-// ==========================================================================
-const state = {
-  activeModule: "",
-  activeFilter: "all",
-  activeConversationId: "conv-001",
-  isInternalNote: false,
-  uploadedLogoDataUrl: "",
-  draggedOpportunityId: null,
+let platform = loadPlatform();
+let session = loadSession();
+let tenant = null;
+let activeModule = "dashboard";
+let activeConversationId = null;
+let agendaView = "day";
+let agendaCursor = new Date();
 
-  conversations: [
-    {
-      id: "conv-001", status: "open", assignedTo: "Ana Sales", lastAt: "09:42", unread: 2,
-      contact: { name: "Mariana Costa", initials: "MC", company: "Costa Beauty Clinic", channel: "whatsapp", phone: "+55 11 98888-1200", tags: ["Lead quente", "Automação"], sentiment: "Positivo", value: 6800 },
-      messages: [
-        { type: "in", text: "Olá, vi a Supreme Tech no Instagram. Quero automatizar o atendimento.", time: "09:31" },
-        { type: "out", text: "Olá, Mariana! Perfeito. Hoje vocês recebem muitos leads?", time: "09:34" },
-        { type: "in", text: "Sim, perdemos muitas por demora no retorno.", time: "09:42" }
-      ]
-    }
-  ],
+document.addEventListener("DOMContentLoaded", bootClient);
 
-  opportunities: [
-    { id: "opp-001", title: "Automação WhatsApp + IA", company: "Costa Beauty Clinic", value: 6800, stage: "Novo Lead", probability: 35, owner: "Ana Sales" },
-    { id: "opp-002", title: "CRM para corretores", company: "Mendes Imóveis", value: 9200, stage: "Qualificação", probability: 55, owner: "Bruno CX" }
-  ],
+function bootClient() {
+  renderIcons();
+  on("login-form", "submit", handleLogin);
+  on("logout-button", "click", logout);
+  on("notifications-button", "click", openNotificationsModal);
+  bindModuleEvents();
+  restoreSession();
+  registerServiceWorker();
+}
 
-  automations: [
-    { id: "auto-001", name: "Novo lead WhatsApp", description: "Cria contato, aplica tag, envia saudação e abre oportunidade no CRM.", icon: "fa-brands fa-whatsapp", active: true },
-    { id: "auto-002", name: "Follow-up inteligente", description: "Detecta conversas sem resposta e agenda follow-up automático.", icon: "fa-solid fa-clock-rotate-left", active: true }
-  ],
-
-  contracts: [
-    { client: "Costa Beauty Clinic", plan: "Automation Pro", status: "Em negociação", mrr: 1890, due: "15/07/2026" }
-  ]
-};
-
-// ==========================================================================
-// 4. INICIALIZAÇÃO, LOGIN E EVENTOS
-// ==========================================================================
-document.addEventListener("DOMContentLoaded", initApp);
-
-function initApp() {
-  const sessaoSalva = localStorage.getItem(SUPREME_STORAGE_KEYS.sessao);
-  
-  if (sessaoSalva) {
-      iniciarSessao(JSON.parse(sessaoSalva));
-  } else {
-      document.getElementById('login-screen').style.display = 'flex';
-      document.querySelector('.app-shell').style.display = 'none';
-  }
-
-  const loginForm = document.getElementById('login-form');
-  if (loginForm) {
-      loginForm.addEventListener('submit', realizarLogin);
+function loadPlatform() {
+  const base = { companies: [], plans: [], modules: defaultMarketplace(), audit: [], notifications: [], version: 2 };
+  try {
+    return { ...base, ...(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}) };
+  } catch {
+    return base;
   }
 }
 
-async function realizarLogin(e) {
-    e.preventDefault();
-    if (!supabaseClient) return showTechToast("Supabase não configurado.", "error");
-
-    const email = document.getElementById('email').value;
-    const senha = document.getElementById('senha').value;
-    const btn = e.target.querySelector('button');
-    const textoOriginal = btn.innerText;
-    
-    btn.innerText = "Autenticando...";
-
-    const { data: cliente, error } = await supabaseClient
-        .from('clientes')
-        .select('*')
-        .eq('email', email)
-        .eq('senha', senha)
-        .single(); 
-
-    btn.innerText = textoOriginal;
-
-    if (cliente) {
-        if (cliente.status === 'suspenso') {
-            showTechToast("⛔ Acesso Suspenso. Contate a administração.", "error");
-            return;
-        }
-        iniciarSessao(cliente);
-    } else {
-        document.getElementById('login-error').style.display = 'block';
-    }
+function savePlatform() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(platform));
 }
 
-function iniciarSessao(dadosCliente) {
-    clienteLogado = dadosCliente;
-    localStorage.setItem(SUPREME_STORAGE_KEYS.sessao, JSON.stringify(dadosCliente));
-
-    document.getElementById('login-screen').style.display = 'none';
-    document.querySelector('.app-shell').style.display = 'flex';
-
-    showTechToast(`Bem-vindo, ${clienteLogado.nome_empresa}!`, "success");
-
-    loadSavedWhiteLabel(); 
-    
-    // O CORAÇÃO DO SISTEMA CAMALEÃO - Monta os menus baseados no DB
-    renderSidebar(clienteLogado.segmento);
-
-    bindEvents();
-}
-
-function fazerLogout() {
-    clienteLogado = null;
-    localStorage.removeItem(SUPREME_STORAGE_KEYS.sessao);
-    document.querySelector('.app-shell').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('login-form').reset();
-}
-
-// --------------------------------------------------------------------------
-// MOTOR DE RENDERIZAÇÃO DINÂMICA DE MÓDULOS
-// --------------------------------------------------------------------------
-function renderSidebar(segmentosString) {
-    const sidebarMenu = document.getElementById('dynamic-menu');
-    if (!sidebarMenu) return;
-
-    sidebarMenu.innerHTML = ''; 
-    
-    // Se o cliente não tiver segmento salvo, usa um fallback seguro
-    const modulosAtivos = (segmentosString || "dashboard,inbox,settings").split(',');
-
-    let primeiroModuloAutorizado = null;
-
-    modulosAtivos.forEach(modKey => {
-        const chaveLimpa = modKey.trim();
-        const configModulo = TODOS_MODULOS[chaveLimpa];
-
-        if (configModulo) {
-            // Guarda o ID do primeiro módulo liberado para abrir a tela automaticamente
-            if(!primeiroModuloAutorizado) {
-                primeiroModuloAutorizado = configModulo.id;
-            }
-
-            // Desenha o botão na barra lateral
-            sidebarMenu.innerHTML += `
-                <button class="saas-btn" data-module="${configModulo.id}" title="${configModulo.name}" type="button">
-                    <i class="fa-solid ${configModulo.icon}"></i>
-                </button>
-            `;
-        }
-    });
-
-    // Adiciona evento de clique nos novos botões gerados
-    sidebarMenu.querySelectorAll('.saas-btn').forEach(btn => {
-        btn.addEventListener('click', () => setActiveModule(btn.dataset.module));
-    });
-
-    // Navega para a primeira tela disponível daquele cliente
-    if (primeiroModuloAutorizado) {
-        setActiveModule(primeiroModuloAutorizado);
-    }
-}
-
-function setActiveModule(moduleName) {
-    if(!moduleName) return;
-    state.activeModule = moduleName;
-
-    // 1. Atualiza cor do botão ativo no menu
-    document.querySelectorAll(".saas-btn").forEach((button) => {
-        button.classList.toggle("active", button.dataset.module === moduleName);
-    });
-
-    // 2. Trava de Segurança: Esconde TODOS os painéis
-    document.querySelectorAll(".app-module").forEach((section) => {
-        section.classList.remove("active");
-    });
-
-    // 3. Mostra apenas o painel solicitado
-    const activeSection = document.getElementById(`module-${moduleName}`);
-    if (activeSection) {
-        activeSection.classList.add("active");
-    }
-
-    // 4. Executa a função de renderização de dados específica daquele módulo
-    if (moduleName === "dashboard-leads") renderDashboardLeads();
-    if (moduleName === "dashboard-agendamentos") renderDashboardAgendamentos();
-    if (moduleName === "crm") renderKanban();
-    if (moduleName === "automations") renderAutomations();
-    if (moduleName === "inbox") {
-        renderConversations();
-        renderActiveConversation();
-    }
-}
-
-function bindEvents() {
-  document.querySelectorAll("[data-module-open]").forEach((button) => {
-    button.addEventListener("click", () => setActiveModule(button.dataset.moduleOpen));
-  });
-
-  const bindIfExists = (id, event, func) => { const el = document.getElementById(id); if(el) el.addEventListener(event, func); };
-
-  bindIfExists("btn-refresh-dashboard", "click", () => { renderDashboardLeads(); showTechToast("Atualizado.", "info"); });
-  bindIfExists("btn-refresh-agenda-dash", "click", () => { renderDashboardAgendamentos(); showTechToast("Métricas da agenda atualizadas.", "info"); });
-
-  const searchInput = document.getElementById("conversation-search");
-  if(searchInput) searchInput.addEventListener("input", () => renderConversations());
-
-  document.querySelectorAll(".filter-btn[data-filter]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.activeFilter = button.dataset.filter;
-      document.querySelectorAll(".filter-btn").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      renderConversations();
-    });
-  });
-
-  const convList = document.getElementById("conversations-list");
-  if(convList) {
-      convList.addEventListener("click", (event) => {
-        const chatItem = event.target.closest(".chat-item");
-        if (!chatItem) return;
-        state.activeConversationId = chatItem.dataset.conversationId;
-        const conversation = getActiveConversation();
-        if (conversation) conversation.unread = 0;
-        renderConversations();
-        renderActiveConversation();
-      });
+function loadSession() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY));
+  } catch {
+    return null;
   }
-
-  document.querySelectorAll(".macro-tag[data-macro]").forEach((button) => {
-    button.addEventListener("click", () => insertMacro(button.dataset.macro));
-  });
-
-  const toggleNote = document.getElementById("toggle-note");
-  if(toggleNote) toggleNote.addEventListener("change", toggleInternalNote);
-
-  const btnSend = document.getElementById("btn-send");
-  if(btnSend) btnSend.addEventListener("click", sendMessage);
-
-  const msgInput = document.getElementById("msg-input");
-  if(msgInput) {
-      msgInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          sendMessage();
-        }
-      });
-  }
-
-  bindIfExists("btn-ai-suggestion", "click", applyAISuggestion);
-  bindIfExists("btn-ai-summary", "click", generateAISummary);
-  bindIfExists("btn-analyze-sentiment", "click", analyzeSentiment);
-  bindIfExists("btn-resolve-conversation", "click", resolveConversation);
-  bindIfExists("btn-new-conversation", "click", createMockConversation);
-  bindIfExists("btn-add-opportunity", "click", createOpportunity);
-
-  const kanbanBoard = document.getElementById("kanban-board");
-  if (kanbanBoard) {
-      kanbanBoard.addEventListener("dragstart", handleKanbanDragStart);
-      kanbanBoard.addEventListener("dragover", handleKanbanDragOver);
-      kanbanBoard.addEventListener("drop", handleKanbanDrop);
-  }
-
-  bindIfExists("btn-create-automation", "click", createAutomation);
-  
-  const autoGrid = document.getElementById("automation-grid");
-  if(autoGrid) {
-      autoGrid.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-toggle-automation]");
-        if (!button) return;
-        toggleAutomation(button.dataset.toggleAutomation);
-      });
-  }
-
-  bindIfExists("btn-export-report", "click", () => showTechToast("Relatório empresarial exportado com sucesso.", "success"));
-  bindIfExists("wl-logo-file", "change", handleLogoUpload);
-  bindIfExists("btn-apply-whitelabel", "click", applyWhiteLabel);
-  bindIfExists("btn-save-backend", "click", saveBackendConfig);
-  bindIfExists("btn-save-ai", "click", saveAIConfig);
-  bindIfExists("btn-logout", "click", fazerLogout);
 }
 
-// ==========================================================================
-// 5. FUNÇÕES DE RENDERIZAÇÃO DE DADOS (KPIs, CRM, Chat)
-// ==========================================================================
-
-function renderDashboardLeads() {
-  const kpiLeads = document.getElementById("kpi-leads");
-  if(!kpiLeads) return; 
-
-  const leads = state.conversations.length + 12;
-  const conversions = state.opportunities.filter((opportunity) => opportunity.stage === "Fechado").length;
-  const active = state.conversations.filter((conversation) => conversation.status === "open").length;
-  const revenue = state.opportunities
-    .filter((opportunity) => opportunity.stage === "Fechado")
-    .reduce((total, opportunity) => total + opportunity.value, 0);
-
-  const efficiency = Math.min(98, 86 + active + conversions);
-  const averageResponse = "3m 24s";
-
-  setText("kpi-leads", String(leads));
-  setText("kpi-conversions", String(conversions));
-  setText("kpi-active", String(active));
-  setText("kpi-response", averageResponse);
-  setText("kpi-efficiency", `${efficiency}%`);
-  setText("kpi-revenue", formatCurrency(revenue));
-  setText("hero-score", `${efficiency}%`);
-  setText("hero-ai", String(37 + active));
-
-  const insights = [
-    "Leads com intenção comercial alta aumentaram 18% nas últimas 24h.",
-    "Tempo médio de primeira resposta está dentro da meta premium.",
-    "IA recomenda priorizar oportunidades acima de R$ 8.000 no pipeline."
-  ];
-
-  const insightsContainer = document.getElementById("dashboard-insights");
-  if(insightsContainer) insightsContainer.innerHTML = insights.map((item) => `<li>${escapeHTML(item)}</li>`).join("");
+function saveSession() {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
-function renderDashboardAgendamentos() {
-    // Exemplo de injeção de dados simulados (No futuro virá do n8n/banco)
-    setText("kpi-consultas-hoje", "14");
-    setText("kpi-consultas-confirmadas", "12");
-    setText("kpi-consultas-canceladas", "2");
-    setText("kpi-comparecimento", "88%");
+function defaultMarketplace() {
+  return Object.entries(MODULES).map(([key, cfg]) => ({
+    key,
+    name: cfg.label,
+    icon: cfg.icon,
+    category: key === "settings" ? "core" : "operational",
+    active: true,
+    commercial: key !== "settings"
+  }));
 }
 
-function renderConversations() {
-  const list = document.getElementById("conversations-list");
-  if (!list) return;
+function handleLogin(event) {
+  event.preventDefault();
+  const email = value("login-email").toLowerCase();
+  const password = value("login-password");
+  const company = platform.companies.find(item => item.email.toLowerCase() === email);
+  if (!company || company.password !== password) return showLoginMessage("Credenciais invalidas.");
+  if (company.status !== "active") return showLoginMessage("Acesso bloqueado pela administracao.");
+  if (company.license?.status === "expired") return showLoginMessage("Assinatura expirada. Contate a Supreme Tech.");
+  const user = (company.users || []).find(item => item.email.toLowerCase() === email) || ownerUser(company);
+  session = { companyId: company.id, userId: user.id, startedAt: Date.now(), lastActivityAt: Date.now() };
+  saveSession();
+  audit(company.id, "login", "Login realizado no Painel Camaleao");
+  startApp(company);
+}
 
-  const searchInput = document.getElementById("conversation-search");
-  const search = searchInput ? searchInput.value.trim().toLowerCase() : "";
-
-  const filtered = state.conversations.filter((conversation) => {
-    const matchesFilter = state.activeFilter === "all" || conversation.status === state.activeFilter;
-    const searchable = [
-      conversation.contact.name,
-      conversation.contact.company,
-      conversation.contact.phone,
-      getLastMessage(conversation).text
-    ].join(" ").toLowerCase();
-
-    return matchesFilter && searchable.includes(search);
-  });
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-magnifying-glass"></i><p>Nenhuma conversa encontrada.</p></div>`;
+function restoreSession() {
+  if (!session) return;
+  if (Date.now() - session.lastActivityAt > SESSION_TIMEOUT_MS) {
+    logout(false);
     return;
   }
-
-  list.innerHTML = filtered.map((conversation) => {
-    return SupremeUI.chatItem({
-      id: conversation.id,
-      name: conversation.contact.name,
-      initials: conversation.contact.initials,
-      preview: getLastMessage(conversation).text,
-      time: conversation.lastAt,
-      channel: conversation.contact.channel,
-      status: conversation.status,
-      unread: conversation.unread,
-      isActive: conversation.id === state.activeConversationId
-    });
-  }).join("");
+  const company = platform.companies.find(item => item.id === session.companyId);
+  if (company && company.status === "active" && company.license?.status !== "expired") startApp(company);
 }
 
-function renderActiveConversation() {
-  const conversation = getActiveConversation();
-  if (!conversation) return;
-
-  setText("active-contact-name", conversation.contact.name);
-  setText("active-contact-meta", `${conversation.contact.company} • ${capitalize(conversation.contact.channel)} • ${conversation.assignedTo}`);
-
-  const assignSelect = document.getElementById("assign-select");
-  if (assignSelect) assignSelect.value = conversation.assignedTo;
-
-  const history = document.getElementById("chat-history");
-  if (history) {
-      history.innerHTML = conversation.messages.map((message) => {
-        return SupremeUI.chatMessage({
-          type: message.type,
-          text: message.text,
-          time: message.time
-        });
-      }).join("");
-      history.scrollTop = history.scrollHeight;
-  }
-
-  renderContactDetails(conversation);
+function startApp(company) {
+  tenant = ensureTenant(company);
+  session.lastActivityAt = Date.now();
+  saveSession();
+  document.getElementById("login-screen").hidden = true;
+  document.getElementById("app-shell").hidden = false;
+  setText("tenant-name", tenant.name);
+  setText("tenant-plan", tenant.planName || "Sem plano");
+  renderTenantLogo();
+  renderMenu();
+  renderNotificationsBadge();
+  setActiveModule(firstAllowedModule());
 }
 
-function renderContactDetails(conversation) {
-  setText("details-avatar", conversation.contact.initials);
-  setText("details-name", conversation.contact.name);
-  setText("details-company", conversation.contact.company);
-  setText("details-channel", capitalize(conversation.contact.channel));
-  setText("details-phone", conversation.contact.phone);
-  setText("details-value", formatCurrency(conversation.contact.value));
-  setText("details-sentiment", conversation.contact.sentiment);
-
-  const tagsContainer = document.getElementById("details-tags");
-  if (tagsContainer) {
-      tagsContainer.innerHTML = conversation.contact.tags
-        .map((tag) => `<span class="tag">${escapeHTML(tag)}</span>`).join("");
-  }
-
-  const summaryOutput = document.getElementById("ai-summary-output");
-  if (summaryOutput && !summaryOutput.dataset.generated) {
-    summaryOutput.textContent = "Gere um resumo automático para visualizar o contexto da conversa.";
-  }
+function logout(record = true) {
+  if (record && tenant) audit(tenant.id, "logout", "Logout realizado no Painel Camaleao");
+  session = null;
+  tenant = null;
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById("app-shell").hidden = true;
+  document.getElementById("login-screen").hidden = false;
 }
 
-function sendMessage() {
-  const input = document.getElementById("msg-input");
-  if(!input) return;
-  const text = input.value.trim();
-  const conversation = getActiveConversation();
+function ensureTenant(company) {
+  company.data ||= {};
+  company.data.conversations ||= [];
+  company.data.pipelines ||= [];
+  company.data.appointments ||= [];
+  company.data.management ||= { categories: [], indicators: [], reports: [], goals: [], processes: [] };
+  company.data.automations ||= [];
+  company.data.dashboardWidgets ||= [];
+  company.users ||= [ownerUser(company)];
+  company.rbac ||= ROLE_PRESETS;
+  company.modules ||= ["dashboard", "settings"];
+  return company;
+}
 
-  if (!conversation) return showTechToast("Selecione uma conversa antes de enviar.", "error");
-  if (!text) return showTechToast("Digite uma mensagem antes de enviar.", "error");
+function ownerUser(company) {
+  return {
+    id: `${company.id}-owner`,
+    name: company.responsible || company.name || "Proprietario",
+    email: company.email,
+    password: company.password,
+    role: "proprietario",
+    permissions: ROLE_PRESETS.proprietario
+  };
+}
 
-  const messageType = state.isInternalNote ? "note" : "out";
+function renderMenu() {
+  const menu = document.getElementById("module-menu");
+  const modules = allowedModules();
+  menu.innerHTML = modules.map(key => `
+    <button type="button" data-module="${key}" class="${key === activeModule ? "active" : ""}">
+      ${icon(MODULES[key].icon)}<span>${MODULES[key].label}</span>
+    </button>
+  `).join("");
+  menu.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => setActiveModule(btn.dataset.module)));
+}
 
-  conversation.messages.push({
-    type: messageType,
-    text,
-    time: getCurrentTime()
+function allowedModules() {
+  const companyModules = tenant?.modules || ["dashboard", "settings"];
+  return companyModules.filter(key => MODULES[key] && hasPermission(key, "view"));
+}
+
+function firstAllowedModule() {
+  return allowedModules()[0] || "settings";
+}
+
+function setActiveModule(moduleKey) {
+  if (!hasPermission(moduleKey, "view")) {
+    toast("Voce nao tem permissao para acessar este modulo.", "error");
+    return;
+  }
+  activeModule = moduleKey;
+  document.querySelectorAll(".module").forEach(section => section.classList.toggle("active", section.id === `module-${moduleKey}`));
+  document.querySelectorAll("#module-menu button").forEach(btn => btn.classList.toggle("active", btn.dataset.module === moduleKey));
+  renderActiveModule();
+}
+
+function renderActiveModule() {
+  const renderers = {
+    dashboard: renderDashboard,
+    inbox: renderInbox,
+    crm: renderCrm,
+    agenda: renderAgenda,
+    management: renderManagement,
+    automations: renderAutomations,
+    marketplace: renderMarketplace,
+    settings: renderSettings
+  };
+  renderers[activeModule]?.();
+  renderIcons();
+}
+
+function bindModuleEvents() {
+  on("add-widget-button", "click", () => openWidgetModal());
+  on("new-conversation-button", "click", () => openConversationModal());
+  on("conversation-search", "input", renderInbox);
+  on("conversation-filter", "change", renderInbox);
+  on("message-form", "submit", sendMessage);
+  on("resolve-conversation-button", "click", resolveConversation);
+  on("new-pipeline-button", "click", () => openPipelineModal());
+  on("edit-pipeline-button", "click", () => openPipelineModal(document.getElementById("pipeline-select").value));
+  on("new-stage-button", "click", () => openStageModal());
+  on("new-deal-button", "click", () => openDealModal());
+  on("pipeline-select", "change", renderCrm);
+  on("new-appointment-button", "click", () => openAppointmentModal());
+  document.querySelectorAll("[data-agenda-view]").forEach(btn => btn.addEventListener("click", () => {
+    agendaView = btn.dataset.agendaView;
+    renderAgenda();
+  }));
+  on("agenda-prev", "click", () => moveAgenda(-1));
+  on("agenda-next", "click", () => moveAgenda(1));
+  on("new-category-button", "click", () => openManagementModal("categories"));
+  on("new-indicator-button", "click", () => openManagementModal("indicators"));
+  on("new-goal-button", "click", () => openManagementModal("goals"));
+  on("new-process-button", "click", () => openManagementModal("processes"));
+  on("new-automation-button", "click", () => openAutomationModal());
+  on("brand-form", "submit", saveBrand);
+  on("new-user-button", "click", () => openUserModal());
+}
+
+function renderDashboard() {
+  const list = document.getElementById("dashboard-widgets");
+  const empty = document.getElementById("dashboard-empty");
+  const widgets = tenant.data.dashboardWidgets;
+  empty.hidden = widgets.length > 0;
+  list.innerHTML = widgets.map(widget => `
+    <article class="metric-card">
+      <span>${escapeHtml(widget.type)}</span>
+      <strong>${escapeHtml(widget.label)}</strong>
+      <small>Fonte: ${escapeHtml(widget.source || "Aguardando integracao")}</small>
+      ${actionButtons("dashboardWidgets", widget.id)}
+    </article>
+  `).join("");
+}
+
+function openWidgetModal(id) {
+  const current = tenant.data.dashboardWidgets.find(item => item.id === id);
+  openFormModal(current ? "Editar widget" : "Novo widget", [
+    inputField("label", "Nome do widget", current?.label),
+    selectField("type", "Tipo", ["KPI", "Grafico", "Card", "Tabela"], current?.type),
+    inputField("source", "Fonte de dados", current?.source)
+  ], values => {
+    upsert(tenant.data.dashboardWidgets, { id, ...values });
+    persistTenant("dashboard_widget_saved", "Widget do dashboard salvo");
+    renderDashboard();
   });
-  conversation.lastAt = getCurrentTime();
-
-  if (!state.isInternalNote && conversation.status === "pending") {
-    conversation.status = "open";
-  }
-
-  input.value = "";
-  renderConversations();
-  renderActiveConversation();
-  showTechToast(state.isInternalNote ? "Nota interna adicionada." : "Mensagem enviada com sucesso.", "success");
 }
 
-function insertMacro(text) {
-  const input = document.getElementById("msg-input");
-  if(!input) return;
-  const separator = input.value.trim().length > 0 ? " " : "";
-  input.value = `${input.value}${separator}${text}`;
-  input.focus();
+function renderInbox() {
+  const list = document.getElementById("conversation-list");
+  const search = value("conversation-search").toLowerCase();
+  const filter = value("conversation-filter") || "all";
+  const conversations = tenant.data.conversations.filter(item => {
+    const matchesFilter = filter === "all" || item.status === filter;
+    const searchable = `${item.contactName} ${item.channel} ${item.phone} ${(item.messages || []).map(m => m.text).join(" ")}`.toLowerCase();
+    return matchesFilter && searchable.includes(search);
+  });
+  list.innerHTML = conversations.length ? conversations.map(item => `
+    <article class="list-item">
+      <strong>${escapeHtml(item.contactName)}</strong>
+      <p class="muted">${escapeHtml(item.channel || "Canal nao informado")}</p>
+      <span class="status-pill ${item.status}">${statusLabel(item.status)}</span>
+      <button class="btn ghost" type="button" data-open-conversation="${item.id}">Abrir</button>
+    </article>
+  `).join("") : "<div class='empty-state compact'>Nenhuma conversa registrada.</div>";
+  list.querySelectorAll("[data-open-conversation]").forEach(btn => btn.addEventListener("click", () => selectConversation(btn.dataset.openConversation)));
+  renderConversation();
 }
 
-function toggleInternalNote() {
-  const toggle = document.getElementById("toggle-note");
-  if(!toggle) return;
-  state.isInternalNote = toggle.checked;
-
-  const inputArea = document.getElementById("input-area");
-  const inputField = document.getElementById("msg-input");
-  const sendIcon = document.querySelector("#btn-send i");
-
-  if(inputArea) inputArea.classList.toggle("internal-note-mode", state.isInternalNote);
-  if(inputField) inputField.placeholder = state.isInternalNote ? "Escreva uma nota interna para sua equipe..." : "Digite sua mensagem ao cliente...";
-  if(sendIcon) sendIcon.className = state.isInternalNote ? "fa-solid fa-lock" : "fa-solid fa-paper-plane";
+function openConversationModal() {
+  openFormModal("Nova conversa", [
+    inputField("contactName", "Nome do contato"),
+    inputField("phone", "Telefone"),
+    selectField("channel", "Canal", ["WhatsApp", "Instagram", "E-mail", "Telefone"]),
+    selectField("status", "Status", ["open", "pending", "resolved"])
+  ], values => {
+    const item = { id: uid("conv"), ...values, messages: [], createdAt: nowIso() };
+    tenant.data.conversations.unshift(item);
+    activeConversationId = item.id;
+    persistTenant("conversation_created", "Conversa criada");
+    renderInbox();
+  });
 }
 
-function applyAISuggestion() {
-  const conversation = getActiveConversation();
-  if (!conversation) return showTechToast("Selecione uma conversa para usar a IA.", "error");
-
-  const suggestion = createAISuggestion(conversation);
-  const input = document.getElementById("msg-input");
-  if(input) {
-      input.value = suggestion;
-      input.focus();
-  }
-  showTechToast("Sugestão de IA aplicada no campo de mensagem.", "info");
+function selectConversation(id) {
+  activeConversationId = id;
+  renderConversation();
 }
 
-function createAISuggestion(conversation) {
-  const value = conversation.contact.value;
-  if (conversation.contact.sentiment === "Preocupado") {
-    return "Entendo sua preocupação. Para garantir segurança, podemos configurar limites de resposta para a IA.";
+function renderConversation() {
+  const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
+  if (!conversation) {
+    setText("active-contact-name", "Nenhuma conversa selecionada");
+    setText("active-contact-meta", "Aguardando dados reais");
+    document.getElementById("chat-history").innerHTML = "Selecione uma conversa.";
+    return;
   }
-  if (value >= 8000) {
-    return "Recomendo uma implantação com CRM visual, automações de follow-up e IA para qualificação dos leads.";
-  }
-  return "Perfeito. Podemos estruturar uma solução com atendimento integrado e automações.";
+  setText("active-contact-name", conversation.contactName);
+  setText("active-contact-meta", `${conversation.channel || "Canal"} - ${conversation.phone || "Sem telefone"}`);
+  document.getElementById("chat-history").innerHTML = conversation.messages.length ? conversation.messages.map(message => `
+    <div class="message ${message.type}">
+      ${escapeHtml(message.text)}
+      <small>${formatDate(message.createdAt)}</small>
+    </div>
+  `).join("") : "<div class='empty-state compact'>Nenhuma mensagem registrada.</div>";
 }
 
-function generateAISummary() {
-  const conversation = getActiveConversation();
-  if (!conversation) return showTechToast("Selecione uma conversa para resumir.", "error");
-
-  const lastInbound = [...conversation.messages].reverse().find((message) => message.type === "in");
-  const summary = `Resumo IA: ${conversation.contact.name} da empresa ${conversation.contact.company} tem interesse em automação. Última msg: "${lastInbound ? lastInbound.text : ""}".`;
-
-  const output = document.getElementById("ai-summary-output");
-  if(output) {
-      output.textContent = summary;
-      output.dataset.generated = "true";
-  }
-  showTechToast("Resumo gerado pela IA.", "success");
-}
-
-function analyzeSentiment() {
-  const conversation = getActiveConversation();
-  if (!conversation) return showTechToast("Selecione uma conversa para analisar.", "error");
-
-  const joinedMessages = conversation.messages.map((message) => message.text.toLowerCase()).join(" ");
-
-  if (joinedMessages.includes("preocup") || joinedMessages.includes("demora") || joinedMessages.includes("perdemos")) {
-    conversation.contact.sentiment = "Preocupado";
-  } else if (joinedMessages.includes("ótimo") || joinedMessages.includes("excelente") || joinedMessages.includes("perfeito")) {
-    conversation.contact.sentiment = "Positivo";
-  } else {
-    conversation.contact.sentiment = "Neutro";
-  }
-
-  renderActiveConversation();
-  showTechToast(`Sentimento classificado como: ${conversation.contact.sentiment}.`, "info");
+function sendMessage(event) {
+  event.preventDefault();
+  const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
+  const text = value("message-input");
+  if (!conversation || !text) return;
+  conversation.messages.push({
+    id: uid("msg"),
+    type: document.getElementById("internal-note-toggle").checked ? "note" : "out",
+    text,
+    createdAt: nowIso()
+  });
+  document.getElementById("message-input").value = "";
+  persistTenant("message_created", "Mensagem registrada");
+  renderInbox();
 }
 
 function resolveConversation() {
-  const conversation = getActiveConversation();
-  if (!conversation) return showTechToast("Selecione uma conversa para resolver.", "error");
-
+  const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
+  if (!conversation) return;
   conversation.status = "resolved";
-  conversation.unread = 0;
-
-  renderConversations();
-  renderActiveConversation();
-  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
-  showTechToast("Atendimento marcado como resolvido.", "success");
+  persistTenant("conversation_resolved", "Conversa resolvida");
+  renderInbox();
 }
 
-function createMockConversation() {
-  const id = `conv-${String(state.conversations.length + 1).padStart(3, "0")}`;
-  const conversation = {
-    id, status: "open", assignedTo: "IA Copilot", lastAt: getCurrentTime(), unread: 1,
-    contact: { name: "Novo Lead Premium", initials: "NL", company: "Empresa Local", channel: "whatsapp", phone: "+55 11 90000-0000", tags: ["Novo Lead"], sentiment: "Neutro", value: 5200 },
-    messages: [{ type: "in", text: "Olá, quero conhecer as soluções da Supreme Tech.", time: getCurrentTime() }]
-  };
-
-  state.conversations.unshift(conversation);
-  state.activeConversationId = id;
-
-  renderConversations();
-  renderActiveConversation();
-  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
-  showTechToast("Nova conversa criada para demonstração.", "success");
+function renderCrm() {
+  const select = document.getElementById("pipeline-select");
+  select.innerHTML = tenant.data.pipelines.map(pipe => `<option value="${pipe.id}">${escapeHtml(pipe.name)}</option>`).join("");
+  const pipeline = tenant.data.pipelines.find(item => item.id === select.value) || tenant.data.pipelines[0];
+  if (pipeline) select.value = pipeline.id;
+  document.getElementById("crm-empty").hidden = Boolean(pipeline);
+  document.getElementById("kanban-board").innerHTML = pipeline ? pipeline.stages
+    .sort((a, b) => a.order - b.order)
+    .map(stage => `
+      <section class="kanban-column" data-stage="${stage.id}">
+        <header>
+          <strong>${escapeHtml(stage.name)}</strong>
+          <button class="icon-button" data-edit-stage="${stage.id}" type="button">${icon("settings")}</button>
+        </header>
+        ${(pipeline.deals || []).filter(deal => deal.stageId === stage.id).map(deal => `
+          <article class="deal-card">
+            <strong>${escapeHtml(deal.title)}</strong>
+            <span>${escapeHtml(deal.company || "")}</span>
+            <span>${formatCurrency(deal.value || 0)}</span>
+            ${actionButtons("deals", deal.id)}
+          </article>
+        `).join("") || "<p class='muted'>Sem oportunidades.</p>"}
+      </section>
+    `).join("") : "";
+  document.querySelectorAll("[data-edit-stage]").forEach(btn => btn.addEventListener("click", () => openStageModal(btn.dataset.editStage)));
 }
 
-function renderKanban() {
-    const board = document.getElementById("kanban-board");
-    if (!board) return;
-    const stages = ["Novo Lead", "Qualificação", "Proposta", "Fechado"];
-
-    board.innerHTML = stages.map(stage => {
-        const stageOpps = state.opportunities.filter(opp => opp.stage === stage);
-        const stageTotal = stageOpps.reduce((sum, opp) => sum + opp.value, 0);
-
-        const cardsHTML = stageOpps.map(opp => 
-            SupremeUI.kanbanCard({
-                id: opp.id, title: opp.title, company: opp.company, value: opp.value, probability: opp.probability
-            })
-        ).join("");
-
-        return `
-            <section class="kanban-column" data-stage="${escapeHTML(stage)}">
-                <header class="kanban-header">
-                    <h3>${escapeHTML(stage)}</h3>
-                    <span>${stageOpps.length} oportunidades • ${formatCurrency(stageTotal)}</span>
-                </header>
-                <div class="kanban-cards">
-                    ${cardsHTML}
-                </div>
-            </section>
-        `;
-    }).join("");
-}
-
-function handleKanbanDragStart(event) {
-  const card = event.target.closest(".k-card");
-  if (!card) return;
-  state.draggedOpportunityId = card.dataset.opportunityId;
-  event.dataTransfer.effectAllowed = "move";
-}
-
-function handleKanbanDragOver(event) {
-  const column = event.target.closest(".kanban-column");
-  if (!column) return;
-  event.preventDefault();
-  event.dataTransfer.dropEffect = "move";
-}
-
-function handleKanbanDrop(event) {
-  const column = event.target.closest(".kanban-column");
-  if (!column || !state.draggedOpportunityId) return;
-
-  const opportunity = state.opportunities.find((item) => item.id === state.draggedOpportunityId);
-  if (!opportunity) return;
-
-  opportunity.stage = column.dataset.stage;
-  if (opportunity.stage === "Fechado") {
-    opportunity.probability = 100;
-  }
-
-  state.draggedOpportunityId = null;
-  renderKanban();
-  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
-  showTechToast(`Oportunidade movida para ${opportunity.stage}.`, "success");
-}
-
-function createOpportunity() {
-  const id = `opp-${String(state.opportunities.length + 1).padStart(3, "0")}`;
-  state.opportunities.unshift({
-    id, title: "Nova solução SaaS", company: "Lead Enterprise", value: 7500, stage: "Novo Lead", probability: 25, owner: "Ana Sales"
+function openPipelineModal(id) {
+  const current = tenant.data.pipelines.find(item => item.id === id);
+  openFormModal(current ? "Editar funil" : "Novo funil", [inputField("name", "Nome do funil", current?.name)], values => {
+    const pipeline = upsert(tenant.data.pipelines, { id, ...values, stages: current?.stages || [], deals: current?.deals || [] });
+    if (!current && pipeline.stages.length === 0) pipeline.stages = [];
+    persistTenant("pipeline_saved", "Funil salvo");
+    renderCrm();
   });
-
-  renderKanban();
-  if(state.activeModule === "dashboard-leads") renderDashboardLeads();
-  showTechToast("Nova oportunidade criada no CRM.", "success");
 }
 
-function renderAutomations() {
-  const grid = document.getElementById("automation-grid");
-  if(!grid) return;
-  
-  grid.innerHTML = state.automations.map((automation) => {
-    return SupremeUI.automationCard({
-        id: automation.id, name: automation.name, description: automation.description, icon: automation.icon, active: automation.active
-    });
+function openStageModal(id) {
+  const pipeline = activePipeline();
+  if (!pipeline) return toast("Crie um funil antes de criar etapas.", "error");
+  const current = pipeline.stages.find(item => item.id === id);
+  openFormModal(current ? "Editar etapa" : "Nova etapa", [
+    inputField("name", "Nome da etapa", current?.name),
+    inputField("order", "Ordem", current?.order ?? pipeline.stages.length + 1, "number")
+  ], values => {
+    upsert(pipeline.stages, { id, name: values.name, order: Number(values.order) || pipeline.stages.length + 1 });
+    persistTenant("stage_saved", "Etapa do funil salva");
+    renderCrm();
+  }, current ? [{ label: "Excluir", className: "danger", action: () => deleteStage(pipeline, current.id) }] : []);
+}
+
+function deleteStage(pipeline, id) {
+  if ((pipeline.deals || []).some(deal => deal.stageId === id)) return toast("Mova ou exclua oportunidades antes de remover esta etapa.", "error");
+  pipeline.stages = pipeline.stages.filter(item => item.id !== id);
+  closeModal();
+  persistTenant("stage_deleted", "Etapa excluida");
+  renderCrm();
+}
+
+function openDealModal(id) {
+  const pipeline = activePipeline();
+  if (!pipeline || !pipeline.stages.length) return toast("Crie um funil com etapas antes de registrar oportunidades.", "error");
+  const current = (pipeline.deals || []).find(item => item.id === id);
+  openFormModal(current ? "Editar oportunidade" : "Nova oportunidade", [
+    inputField("title", "Titulo", current?.title),
+    inputField("company", "Empresa ou contato", current?.company),
+    inputField("value", "Valor", current?.value || 0, "number"),
+    selectField("stageId", "Etapa", pipeline.stages.sort((a, b) => a.order - b.order).map(s => ({ value: s.id, label: s.name })), current?.stageId)
+  ], values => {
+    pipeline.deals ||= [];
+    upsert(pipeline.deals, { id, ...values, value: Number(values.value) || 0 });
+    persistTenant("deal_saved", "Oportunidade salva");
+    renderCrm();
+  });
+}
+
+function activePipeline() {
+  const id = document.getElementById("pipeline-select").value;
+  return tenant.data.pipelines.find(item => item.id === id) || tenant.data.pipelines[0];
+}
+
+function renderAgenda() {
+  const label = document.getElementById("agenda-label");
+  label.textContent = agendaView === "month"
+    ? agendaCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    : agendaCursor.toLocaleDateString("pt-BR");
+  const grid = document.getElementById("agenda-grid");
+  if (agendaView === "month") grid.innerHTML = renderMonth();
+  else if (agendaView === "week") grid.innerHTML = renderWeek();
+  else grid.innerHTML = renderDay();
+}
+
+function renderDay() {
+  const iso = dateIso(agendaCursor);
+  return Array.from({ length: 12 }, (_, idx) => idx + 8).map(hour => {
+    const items = tenant.data.appointments.filter(item => item.date === iso && item.time.startsWith(String(hour).padStart(2, "0")));
+    return `<div class="agenda-row"><div class="agenda-time">${hour}:00</div><div class="agenda-cell">${items.map(appointmentCard).join("")}</div></div>`;
   }).join("");
 }
 
-function toggleAutomation(id) {
-  const automation = state.automations.find((item) => item.id === id);
-  if (!automation) return;
-
-  automation.active = !automation.active;
-  renderAutomations();
-  showTechToast(`Automação ${automation.active ? "ativada" : "desativada"}.`, "info");
+function renderWeek() {
+  const start = startOfWeek(agendaCursor);
+  const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
+  const header = `<div class="agenda-week-row"><div class="agenda-day-head"></div>${days.map(day => `<div class="agenda-day-head">${day.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit" })}</div>`).join("")}</div>`;
+  const rows = Array.from({ length: 12 }, (_, idx) => idx + 8).map(hour => `
+    <div class="agenda-week-row">
+      <div class="agenda-time">${hour}:00</div>
+      ${days.map(day => {
+        const iso = dateIso(day);
+        const items = tenant.data.appointments.filter(item => item.date === iso && item.time.startsWith(String(hour).padStart(2, "0")));
+        return `<div class="agenda-cell">${items.map(appointmentCard).join("")}</div>`;
+      }).join("")}
+    </div>
+  `).join("");
+  return header + rows;
 }
 
-function createAutomation() {
-  const id = `auto-${String(state.automations.length + 1).padStart(3, "0")}`;
-  state.automations.push({
-    id, name: "Webhook para CRM externo", description: "Envia eventos de conversa.", icon: "fa-solid fa-plug-circle-bolt", active: false
+function renderMonth() {
+  const first = new Date(agendaCursor.getFullYear(), agendaCursor.getMonth(), 1);
+  const start = startOfWeek(first);
+  return `<div class="agenda-month-grid">${Array.from({ length: 42 }, (_, index) => {
+    const day = addDays(start, index);
+    const iso = dateIso(day);
+    const items = tenant.data.appointments.filter(item => item.date === iso);
+    return `<div class="agenda-cell"><strong>${day.getDate()}</strong>${items.slice(0, 3).map(appointmentCard).join("")}</div>`;
+  }).join("")}</div>`;
+}
+
+function appointmentCard(item) {
+  return `<button class="appointment" type="button" onclick="window.editAppointment('${item.id}')"><strong>${escapeHtml(item.time)}</strong> ${escapeHtml(item.title)}</button>`;
+}
+
+window.editAppointment = id => openAppointmentModal(id);
+
+function openAppointmentModal(id) {
+  const current = tenant.data.appointments.find(item => item.id === id);
+  openFormModal(current ? "Editar agendamento" : "Novo agendamento", [
+    inputField("title", "Titulo", current?.title),
+    inputField("date", "Data", current?.date || dateIso(agendaCursor), "date"),
+    inputField("time", "Hora", current?.time || "09:00", "time"),
+    inputField("responsible", "Responsavel", current?.responsible),
+    selectField("status", "Status", ["pending", "confirmed", "done", "cancelled"], current?.status)
+  ], values => {
+    upsert(tenant.data.appointments, { id, ...values });
+    persistTenant("appointment_saved", "Agendamento salvo");
+    renderAgenda();
   });
-
-  renderAutomations();
-  showTechToast("Nova automação criada.", "success");
 }
 
-// ==========================================================================
-// 6. FUNÇÕES DE CONFIGURAÇÃO (WHITE-LABEL, BACKEND, IA)
-// ==========================================================================
+function moveAgenda(direction) {
+  if (agendaView === "month") agendaCursor.setMonth(agendaCursor.getMonth() + direction);
+  else agendaCursor.setDate(agendaCursor.getDate() + (agendaView === "week" ? direction * 7 : direction));
+  agendaCursor = new Date(agendaCursor);
+  renderAgenda();
+}
 
-function handleLogoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+function renderManagement() {
+  const container = document.getElementById("management-grid");
+  const groups = tenant.data.management;
+  const items = Object.entries(groups).flatMap(([type, values]) => values.map(item => ({ ...item, type })));
+  document.getElementById("management-empty").hidden = items.length > 0;
+  container.innerHTML = items.map(item => `
+    <article class="data-card">
+      <small>${managementLabel(item.type)}</small>
+      <h2>${escapeHtml(item.name)}</h2>
+      <p class="muted">${escapeHtml(item.description || "")}</p>
+      ${actionButtons(item.type, item.id)}
+    </article>
+  `).join("");
+}
 
-  const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
-  if (!allowedTypes.includes(file.type)) {
-    showTechToast("Formato inválido. Use PNG, JPG, WEBP ou SVG.", "error");
-    event.target.value = "";
-    return;
-  }
+function openManagementModal(type, id) {
+  const current = tenant.data.management[type].find(item => item.id === id);
+  openFormModal(current ? "Editar item" : `Novo item: ${managementLabel(type)}`, [
+    inputField("name", "Nome", current?.name),
+    inputField("description", "Descricao", current?.description)
+  ], values => {
+    upsert(tenant.data.management[type], { id, ...values });
+    persistTenant("management_saved", "Estrutura de gestao salva");
+    renderManagement();
+  });
+}
 
-  if (file.size > 1024 * 1024) {
-    showTechToast("A imagem deve ter no máximo 1MB.", "error");
-    event.target.value = "";
-    return;
-  }
+function renderAutomations() {
+  const list = document.getElementById("automation-list");
+  list.innerHTML = tenant.data.automations.length ? tenant.data.automations.map(item => `
+    <article class="data-card">
+      <h2>${escapeHtml(item.name)}</h2>
+      <p class="muted">${escapeHtml(item.trigger)} -> ${escapeHtml(item.action)}</p>
+      <span class="status-pill ${item.active ? "active" : "suspended"}">${item.active ? "Ativa" : "Inativa"}</span>
+      ${actionButtons("automations", item.id)}
+    </article>
+  `).join("") : "<div class='empty-state compact'>Nenhuma automacao configurada.</div>";
+}
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.uploadedLogoDataUrl = String(reader.result);
-    const fileNameDisplay = document.getElementById("file-name-display");
-    if(fileNameDisplay) fileNameDisplay.textContent = file.name;
-    const clientLogo = document.getElementById("client-logo-sidebar");
-    if(clientLogo) clientLogo.src = state.uploadedLogoDataUrl;
-    showTechToast("Logomarca carregada. Clique em aplicar.", "info");
+function openAutomationModal(id) {
+  const current = tenant.data.automations.find(item => item.id === id);
+  openFormModal(current ? "Editar automacao" : "Nova automacao", [
+    inputField("name", "Nome", current?.name),
+    inputField("trigger", "Gatilho", current?.trigger),
+    inputField("action", "Acao", current?.action),
+    selectField("active", "Status", [{ value: "true", label: "Ativa" }, { value: "false", label: "Inativa" }], String(current?.active ?? true))
+  ], values => {
+    upsert(tenant.data.automations, { id, ...values, active: values.active === "true" });
+    persistTenant("automation_saved", "Automacao salva");
+    renderAutomations();
+  });
+}
+
+function renderMarketplace() {
+  const list = document.getElementById("marketplace-list");
+  list.innerHTML = platform.modules.map(item => `
+    <article class="data-card">
+      ${icon(item.icon)}
+      <h2>${escapeHtml(item.name)}</h2>
+      <p class="muted">${item.commercial ? "Modulo comercial" : "Modulo base"}</p>
+      <span class="status-pill ${tenant.modules.includes(item.key) ? "active" : "suspended"}">${tenant.modules.includes(item.key) ? "Liberado" : "Nao liberado"}</span>
+    </article>
+  `).join("");
+}
+
+function renderSettings() {
+  document.getElementById("brand-name").value = tenant.brand?.name || tenant.name || "";
+  document.getElementById("brand-logo-url").value = tenant.brand?.logoUrl || "";
+  document.getElementById("brand-primary").value = tenant.brand?.primary || "#d4af37";
+  document.getElementById("brand-accent").value = tenant.brand?.accent || "#00d2ff";
+  renderUsers();
+  renderAudit();
+  renderNotifications();
+}
+
+function saveBrand(event) {
+  event.preventDefault();
+  tenant.brand = {
+    name: value("brand-name"),
+    logoUrl: value("brand-logo-url"),
+    primary: value("brand-primary"),
+    accent: value("brand-accent")
   };
-  reader.onerror = () => showTechToast("Erro ao carregar.", "error");
-  reader.readAsDataURL(file);
+  persistTenant("brand_updated", "Identidade visual atualizada");
+  renderTenantLogo();
+  toast("Identidade salva.", "success");
 }
 
-function applyWhiteLabel() {
-  const bgInput = document.getElementById("wl-bg");
-  const primaryInput = document.getElementById("wl-primary");
-  const accentInput = document.getElementById("wl-accent");
-  const logoInput = document.getElementById("wl-logo-url");
+function renderTenantLogo() {
+  const mark = document.getElementById("tenant-logo");
+  mark.innerHTML = tenant.brand?.logoUrl ? `<img src="${escapeAttr(tenant.brand.logoUrl)}" alt="">` : initials(tenant.name);
+  document.documentElement.style.setProperty("--primary", tenant.brand?.primary || "#d4af37");
+  document.documentElement.style.setProperty("--accent", tenant.brand?.accent || "#00d2ff");
+}
 
-  if (!bgInput || !primaryInput || !accentInput) return;
+function renderUsers() {
+  const list = document.getElementById("users-list");
+  list.innerHTML = (tenant.users || []).map(user => `
+    <article class="list-item">
+      <strong>${escapeHtml(user.name)}</strong>
+      <p class="muted">${escapeHtml(user.email)} - ${roleLabel(user.role)}</p>
+      <button class="btn ghost" type="button" data-edit-user="${user.id}">Editar</button>
+    </article>
+  `).join("") || "<div class='empty-state compact'>Nenhum usuario cadastrado.</div>";
+  list.querySelectorAll("[data-edit-user]").forEach(btn => btn.addEventListener("click", () => openUserModal(btn.dataset.editUser)));
+}
 
-  const bgColor = bgInput.value;
-  const primaryColor = primaryInput.value;
-  const accentColor = accentInput.value;
-  const logoUrl = logoInput ? logoInput.value.trim() : '';
+function openUserModal(id) {
+  if (!hasPermission("settings", "manage_users")) return toast("Permissao insuficiente.", "error");
+  const current = tenant.users.find(item => item.id === id);
+  openFormModal(current ? "Editar usuario" : "Novo usuario", [
+    inputField("name", "Nome", current?.name),
+    inputField("email", "E-mail", current?.email, "email"),
+    inputField("password", "Senha", current?.password, "password"),
+    selectField("role", "Perfil", Object.keys(ROLE_PRESETS).map(role => ({ value: role, label: roleLabel(role) })), current?.role || "atendente")
+  ], values => {
+    upsert(tenant.users, { id, ...values, permissions: ROLE_PRESETS[values.role] });
+    persistTenant("user_saved", "Usuario salvo");
+    renderUsers();
+  });
+}
 
-  const clientLogo = document.getElementById("client-logo-sidebar");
-  let finalLogo = state.uploadedLogoDataUrl || (clientLogo ? clientLogo.src : '');
+function renderAudit() {
+  document.getElementById("audit-list").innerHTML = platform.audit
+    .filter(item => item.companyId === tenant.id)
+    .slice(0, 60)
+    .map(item => `<div class="timeline-item">${escapeHtml(item.description)}<small>${formatDate(item.createdAt)}</small></div>`)
+    .join("") || "<div class='empty-state compact'>Nenhum log registrado.</div>";
+}
 
-  if (logoUrl) {
-    if (!isValidURL(logoUrl)) return showTechToast("URL inválida.", "error");
-    finalLogo = logoUrl;
+function renderNotifications() {
+  document.getElementById("notification-list").innerHTML = tenantNotifications()
+    .map(item => `<div class="timeline-item">${escapeHtml(item.title)}<small>${escapeHtml(item.priority)} - ${formatDate(item.createdAt)}</small></div>`)
+    .join("") || "<div class='empty-state compact'>Nenhuma notificacao.</div>";
+}
+
+function openNotificationsModal() {
+  renderNotificationsBadge(true);
+  openModal("Notificacoes", `<div class="timeline">${tenantNotifications().map(item => `<div class="timeline-item">${escapeHtml(item.title)}<small>${formatDate(item.createdAt)}</small></div>`).join("") || "Nenhuma notificacao."}</div>`);
+}
+
+function tenantNotifications() {
+  return platform.notifications.filter(item => item.companyId === tenant?.id);
+}
+
+function renderNotificationsBadge(markRead = false) {
+  if (!tenant) return;
+  if (markRead) tenantNotifications().forEach(item => { item.read = true; });
+  const unread = tenantNotifications().filter(item => !item.read).length;
+  const counter = document.getElementById("notification-count");
+  counter.hidden = unread === 0;
+  counter.textContent = unread;
+  savePlatform();
+}
+
+function hasPermission(moduleKey, action) {
+  if (!tenant || !session) return false;
+  const user = tenant.users.find(item => item.id === session.userId) || ownerUser(tenant);
+  return Boolean(user.permissions?.[moduleKey]?.includes(action));
+}
+
+function allPermissions() {
+  return Object.keys(MODULES).reduce((acc, key) => ({ ...acc, [key]: PERMISSION_ACTIONS.slice() }), {});
+}
+
+function permissions(actions) {
+  return Object.keys(MODULES).reduce((acc, key) => ({ ...acc, [key]: actions.slice() }), {});
+}
+
+function modulePermissions(modules, actions) {
+  return modules.reduce((acc, key) => ({ ...acc, [key]: actions.slice() }), {});
+}
+
+function persistTenant(action, description) {
+  const index = platform.companies.findIndex(item => item.id === tenant.id);
+  if (index >= 0) platform.companies[index] = tenant;
+  audit(tenant.id, action, description);
+  savePlatform();
+}
+
+function audit(companyId, action, description) {
+  platform.audit.unshift({ id: uid("audit"), companyId, action, description, createdAt: nowIso() });
+  savePlatform();
+}
+
+function openFormModal(title, fields, onSubmit, extraActions = []) {
+  const formId = uid("form");
+  openModal(title, `<form id="${formId}" class="stack">${fields.join("")}<footer>${extraActions.map((action, index) => `<button class="btn ${action.className || "ghost"}" type="button" data-extra-action="${index}">${action.label}</button>`).join("")}<button class="btn ghost" type="button" data-close-modal>Cancelar</button><button class="btn primary" type="submit">${icon("save")} Salvar</button></footer></form>`);
+  document.querySelectorAll("[data-extra-action]").forEach(button => button.addEventListener("click", () => extraActions[Number(button.dataset.extraAction)].action()));
+  document.getElementById(formId).addEventListener("submit", event => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.target).entries());
+    onSubmit(data);
+    closeModal();
+  });
+}
+
+function openModal(title, body) {
+  const root = document.getElementById("modal-root");
+  root.hidden = false;
+  root.innerHTML = `<section class="modal"><header><div><p class="eyebrow">Supreme Tech</p><h2>${escapeHtml(title)}</h2></div><button class="icon-button" type="button" data-close-modal>${icon("chevron-left")}</button></header>${body}</section>`;
+  root.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));
+  renderIcons();
+}
+
+function closeModal() {
+  const root = document.getElementById("modal-root");
+  root.hidden = true;
+  root.innerHTML = "";
+}
+
+function inputField(name, label, currentValue = "", type = "text") {
+  return `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(currentValue ?? "")}" ${type !== "password" ? "required" : ""}></label>`;
+}
+
+function selectField(name, label, options, selected = "") {
+  const normalized = options.map(item => typeof item === "string" ? { value: item, label: item } : item);
+  return `<label class="field">${label}<select name="${name}">${normalized.map(item => `<option value="${escapeAttr(item.value)}" ${String(item.value) === String(selected) ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>`;
+}
+
+function actionButtons(type, id) {
+  return `<div class="actions"><button class="btn ghost" type="button" onclick="window.editRecord('${type}','${id}')">Editar</button><button class="btn danger" type="button" onclick="window.deleteRecord('${type}','${id}')">Excluir</button></div>`;
+}
+
+window.editRecord = (type, id) => {
+  if (type === "dashboardWidgets") openWidgetModal(id);
+  if (type === "deals") openDealModal(id);
+  if (["categories", "indicators", "reports", "goals", "processes"].includes(type)) openManagementModal(type, id);
+  if (type === "automations") openAutomationModal(id);
+};
+
+window.deleteRecord = (type, id) => {
+  if (!confirm("Excluir este registro?")) return;
+  if (type === "dashboardWidgets") tenant.data.dashboardWidgets = tenant.data.dashboardWidgets.filter(item => item.id !== id);
+  if (type === "deals") activePipeline().deals = activePipeline().deals.filter(item => item.id !== id);
+  if (["categories", "indicators", "reports", "goals", "processes"].includes(type)) tenant.data.management[type] = tenant.data.management[type].filter(item => item.id !== id);
+  if (type === "automations") tenant.data.automations = tenant.data.automations.filter(item => item.id !== id);
+  persistTenant("record_deleted", "Registro excluido");
+  renderActiveModule();
+};
+
+function upsert(list, item) {
+  if (item.id) {
+    const index = list.findIndex(entry => entry.id === item.id);
+    if (index >= 0) {
+      list[index] = { ...list[index], ...item };
+      return list[index];
+    }
   }
-
-  document.documentElement.style.setProperty("--bg-dark", bgColor);
-  document.documentElement.style.setProperty("--primary", primaryColor);
-  document.documentElement.style.setProperty("--primary-strong", lightenHex(primaryColor, 22));
-  document.documentElement.style.setProperty("--accent", accentColor);
-  if(clientLogo) clientLogo.src = finalLogo;
-
-  const config = { bgColor, primaryColor, accentColor, logoUrl: finalLogo };
-  localStorage.setItem(SUPREME_STORAGE_KEYS.whiteLabel, JSON.stringify(config));
-  showTechToast("Identidade visual aplicada com sucesso.", "success");
+  const created = { ...item, id: uid("item"), createdAt: nowIso() };
+  list.push(created);
+  return created;
 }
 
-function loadSavedWhiteLabel() {
-  const rawConfig = localStorage.getItem(SUPREME_STORAGE_KEYS.whiteLabel);
-  if (!rawConfig) return;
-
-  try {
-    const config = JSON.parse(rawConfig);
-    if (config.bgColor) { 
-        document.documentElement.style.setProperty("--bg-dark", config.bgColor); 
-        const bgInput = document.getElementById("wl-bg");
-        if(bgInput) bgInput.value = config.bgColor; 
-    }
-    if (config.primaryColor) {
-      document.documentElement.style.setProperty("--primary", config.primaryColor);
-      document.documentElement.style.setProperty("--primary-strong", lightenHex(config.primaryColor, 22));
-      const primInput = document.getElementById("wl-primary");
-      if(primInput) primInput.value = config.primaryColor;
-    }
-    if (config.accentColor) { 
-        document.documentElement.style.setProperty("--accent", config.accentColor); 
-        const accInput = document.getElementById("wl-accent");
-        if(accInput) accInput.value = config.accentColor; 
-    }
-    if (config.logoUrl) { 
-        const clientLogo = document.getElementById("client-logo-sidebar");
-        if(clientLogo) clientLogo.src = config.logoUrl; 
-    }
-  } catch {
-    localStorage.removeItem(SUPREME_STORAGE_KEYS.whiteLabel);
-  }
+function on(id, event, handler) {
+  document.getElementById(id)?.addEventListener(event, handler);
 }
 
-function saveBackendConfig() {
-  const backendURL = document.getElementById("backend-url")?.value.trim() || '';
-  const accountId = document.getElementById("chatwoot-account")?.value.trim() || '';
-
-  if (backendURL && !isValidURL(backendURL)) return showTechToast("URL inválida.", "error");
-
-  const config = { backendURL, accountId };
-  localStorage.setItem(SUPREME_STORAGE_KEYS.backend, JSON.stringify(config));
-  showTechToast("Conexão segura salva.", "success");
+function value(id) {
+  return document.getElementById(id)?.value.trim() || "";
 }
 
-function saveAIConfig() {
-  const toneInput = document.getElementById("ai-tone");
-  const autoSummaryInput = document.getElementById("ai-autosummary");
-  if(!toneInput || !autoSummaryInput) return;
-
-  localStorage.setItem(SUPREME_STORAGE_KEYS.ai, JSON.stringify({ tone: toneInput.value, autosummary: autoSummaryInput.value }));
-  showTechToast("Configurações de IA salvas.", "success");
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
-// ==========================================================================
-// 7. FUNÇÕES UTILITÁRIAS E FORMATADORES
-// ==========================================================================
-
-function getActiveConversation() { return state.conversations.find((c) => c.id === state.activeConversationId); }
-function getLastMessage(c) { return c.messages[c.messages.length - 1] || { text: "", time: "" }; }
-function getStatusLabel(s) { const labels = { open: "Aberto", pending: "Pendente", resolved: "Resolvido" }; return labels[s] || s; }
-
-function getChannelBadge(channel) {
-  const normalized = channel.toLowerCase();
-  if (normalized === "whatsapp") return '<span class="badge whatsapp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</span>';
-  if (normalized === "instagram") return '<span class="badge instagram"><i class="fa-brands fa-instagram"></i> Instagram</span>';
-  return '<span class="badge email"><i class="fa-solid fa-envelope"></i> E-mail</span>';
+function showLoginMessage(message) {
+  setText("login-message", message);
 }
 
-function showTechToast(message, type = "info") {
-  let container = document.getElementById("tech-toast-container");
-  if(!container) {
-      container = document.createElement("div");
-      container.id = "tech-toast-container";
-      document.body.appendChild(container);
-  }
-  const toast = document.createElement("div");
-  const normalizedType = ["success", "error", "info"].includes(type) ? type : "info";
-  const iconClass = normalizedType === "success" ? "fa-circle-check" : normalizedType === "error" ? "fa-circle-xmark" : "fa-circle-info";
-
-  toast.className = `tech-toast toast-${normalizedType}`;
-  toast.innerHTML = `
-      <div class="toast-icon"><i class="fa-solid ${iconClass}"></i></div>
-      <div class="toast-body"><h4>${normalizedType === "success" ? "Sucesso" : normalizedType === "error" ? "Atenção" : "Informação"}</h4><p>${message}</p></div>
-      <div class="toast-progress"></div>
-  `;
-  container.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add("show"));
-  window.setTimeout(() => { toast.classList.remove("show"); window.setTimeout(() => toast.remove(), 300); }, 4000);
+function toast(message, type = "info") {
+  const root = document.getElementById("toast-root");
+  const item = document.createElement("div");
+  item.className = `toast ${type}`;
+  item.textContent = message;
+  root.appendChild(item);
+  setTimeout(() => item.remove(), 3600);
 }
 
-function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
-function escapeHTML(val) { return String(val).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
-function formatCurrency(val) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(Number(val) || 0); }
-function getCurrentTime() { return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date()); }
-function capitalize(val) { const str = String(val || ""); if (!str) return ""; return str.charAt(0).toUpperCase() + str.slice(1); }
-function isValidURL(val) { try { const url = new URL(val); return url.protocol === "http:" || url.protocol === "https:"; } catch { return false; } }
-function lightenHex(hex, pct) {
-  const norm = hex.replace("#", "");
-  if (norm.length !== 6) return hex;
-  const num = parseInt(norm, 16);
-  const r = Math.min(255, (num >> 16) + Math.round(255 * (pct / 100)));
-  const g = Math.min(255, ((num >> 8) & 255) + Math.round(255 * (pct / 100)));
-  const b = Math.min(255, (num & 255) + Math.round(255 * (pct / 100)));
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+function icon(name) {
+  return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.settings}</svg>`;
+}
+
+function renderIcons(root = document) {
+  root.querySelectorAll("[data-icon]").forEach(el => {
+    el.innerHTML = icon(el.dataset.icon);
+    el.removeAttribute("data-icon");
+  });
+}
+
+function escapeHtml(raw) {
+  return String(raw ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(raw) {
+  return escapeHtml(raw).replaceAll("`", "&#096;");
+}
+
+function uid(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function formatDate(raw) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(raw));
+}
+
+function formatCurrency(raw) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(raw) || 0);
+}
+
+function dateIso(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfWeek(date) {
+  const current = new Date(date);
+  current.setDate(current.getDate() - current.getDay());
+  return current;
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function initials(name) {
+  return String(name || "ST")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function statusLabel(status) {
+  return ({
+    open: "Aberto",
+    pending: "Pendente",
+    resolved: "Resolvido",
+    active: "Ativo",
+    suspended: "Suspenso",
+    cancelled: "Cancelado"
+  })[status] || status;
+}
+
+function roleLabel(role) {
+  return ({
+    proprietario: "Proprietario",
+    administrador: "Administrador",
+    gerente: "Gerente",
+    supervisor: "Supervisor",
+    atendente: "Atendente",
+    financeiro: "Financeiro",
+    comercial: "Comercial",
+    suporte: "Suporte"
+  })[role] || role;
+}
+
+function managementLabel(type) {
+  return ({
+    categories: "Categoria",
+    indicators: "Indicador",
+    reports: "Relatorio",
+    goals: "Meta",
+    processes: "Processo"
+  })[type] || type;
+}
+
+function registerServiceWorker() {
+  if (!["http:", "https:"].includes(location.protocol)) return;
+  const manifest = document.createElement("link");
+  manifest.rel = "manifest";
+  manifest.href = "manifest.webmanifest";
+  document.head.appendChild(manifest);
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 }

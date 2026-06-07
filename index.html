@@ -1,396 +1,232 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Supreme Tech - Plataforma premium de atendimento, automações, IA, CRM e gestão empresarial." />
-  <title>Supreme Tech | Sistema Central Integrado</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  
-  <link rel="stylesheet" href="crm.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Painel Camaleao Supreme Tech para atendimento, CRM, agenda, gestao e automacoes.">
+  <meta name="theme-color" content="#070b16">
+  <title>Painel Camaleao | Supreme Tech</title>
+  <link rel="stylesheet" href="crm.css">
 </head>
-
 <body>
-  
-  <div id="login-screen" style="display: flex; height: 100vh; justify-content: center; align-items: center; position: relative; overflow: hidden; background: #040912;">
-    <div id="led-background" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 0; opacity: 0.3;">
-      <div class="led-line" style="position: absolute; width: 1px; height: 100%; background: linear-gradient(to bottom, transparent, rgba(0, 210, 255, 0.2), transparent); left: 20%;"><div class="led-light" style="animation-delay: 1s; animation-duration: 3s;"></div></div>
-      <div class="led-line" style="position: absolute; width: 1px; height: 100%; background: linear-gradient(to bottom, transparent, rgba(0, 210, 255, 0.2), transparent); left: 50%;"><div class="led-light gold" style="animation-delay: 0s; animation-duration: 4s;"></div></div>
-      <div class="led-line" style="position: absolute; width: 1px; height: 100%; background: linear-gradient(to bottom, transparent, rgba(0, 210, 255, 0.2), transparent); left: 80%;"><div class="led-light" style="animation-delay: 2s; animation-duration: 2.5s;"></div></div>
-    </div>
-
-    <div class="login-box" style="background: rgba(7, 16, 30, 0.85); backdrop-filter: blur(20px); padding: 50px 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 30px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(212, 175, 55, 0.2); width: 100%; max-width: 400px; text-align: center; position: relative; z-index: 2;">
-      <img src="https://dummyimage.com/160x60/07101e/d4af37.png&text=Supreme+Tech" alt="Supreme-Tech Logo" class="logo-login" style="width: 160px; height: auto; margin: 0 auto 30px auto; display: block;" onerror="this.style.display='none'">
-      <h2 style="color: #F8F9FA; margin: 0; font-weight: 700; font-family: 'Montserrat', sans-serif; text-transform: uppercase;">Sistema Central</h2>
-      <p style="color: #00D2FF; margin-bottom: 30px; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;">Acesso Restrito Multi-Tenant</p>
-      
-      <div class="error-msg" id="login-error" style="display: none; color: #ef4444; background: rgba(239,68,68,0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); margin-bottom: 15px; font-size: 14px;">Credenciais inválidas!</div>
-      
-      <form id="login-form">
-        <div class="input-group" style="margin-bottom: 20px; text-align: left;">
-          <input type="email" id="email" class="form-control" placeholder="E-mail Corporativo" required style="width: 100%; padding: 15px; background: rgba(10, 15, 25, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; color: #fff;">
-        </div>
-        <div class="input-group" style="margin-bottom: 20px; text-align: left;">
-          <input type="password" id="senha" class="form-control" placeholder="Senha de Acesso" required style="width: 100%; padding: 15px; background: rgba(10, 15, 25, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; color: #fff;">
-        </div>
-        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #D4AF37, #e6c855); color: #000; border: none; padding: 15px 24px; border-radius: 50px; font-weight: 700; width: 100%; cursor: pointer; text-transform: uppercase;">Iniciar Sessão</button>
+  <section id="login-screen" class="auth-screen">
+    <div class="auth-panel">
+      <div class="brand-mark" aria-label="Supreme Tech">ST</div>
+      <p class="eyebrow">Painel Camaleao</p>
+      <h1>Acesso da empresa</h1>
+      <p class="muted">Entre com as credenciais liberadas pela administracao Supreme Tech.</p>
+      <form id="login-form" class="stack">
+        <label class="field">E-mail corporativo
+          <input id="login-email" type="email" autocomplete="email" required>
+        </label>
+        <label class="field">Senha
+          <input id="login-password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn primary" type="submit"><span data-icon="log-in"></span> Entrar</button>
+        <p id="login-message" class="form-message" role="alert"></p>
       </form>
     </div>
-  </div>
+  </section>
 
-  <div class="app-shell" style="display: none;">
-    <aside class="saas-sidebar" aria-label="Menu principal">
-      <div class="brand-area">
-        <div class="brand-orb"></div>
-        <img id="client-logo-sidebar" class="brand-logo" src="https://dummyimage.com/96x96/111827/d4af37.png&text=ST" alt="Logo Cliente" />
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div id="tenant-logo" class="brand-mark small">ST</div>
+        <div>
+          <strong id="tenant-name">Empresa</strong>
+          <span id="tenant-plan">Plano</span>
+        </div>
       </div>
-
-      <nav class="saas-menu" id="dynamic-menu"></nav>
-
-      <div class="saas-profile" title="Perfil e Sessão" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
-        <div class="avatar-sm">ST</div>
-        <button id="btn-logout" class="btn-icon danger" title="Desconectar do Sistema">
-          <i class="fa-solid fa-power-off"></i>
+      <nav id="module-menu" class="sidebar-menu" aria-label="Modulos do cliente"></nav>
+      <div class="sidebar-footer">
+        <button id="notifications-button" class="icon-button" type="button" title="Notificacoes">
+          <span data-icon="bell"></span><span id="notification-count" class="counter" hidden>0</span>
         </button>
+        <button id="logout-button" class="icon-button danger" type="button" title="Sair"><span data-icon="log-out"></span></button>
       </div>
     </aside>
 
-    <main class="saas-content" id="main-content-area">
-      
-      <section id="module-dashboard-leads" class="app-module" aria-labelledby="dashboard-leads-title">
+    <main class="workspace">
+      <section id="module-dashboard" class="module active">
         <header class="module-header">
           <div>
-            <p class="eyebrow">Captação e Conversão</p>
-            <h1 id="dashboard-leads-title">Dashboard de Leads</h1>
+            <p class="eyebrow">Operacao</p>
+            <h1>Dashboard configuravel</h1>
           </div>
-          <div class="header-actions">
-            <button class="btn btn-ghost" type="button" id="btn-refresh-dashboard">
-              <i class="fa-solid fa-rotate"></i> Atualizar
-            </button>
-            <button class="btn btn-primary" type="button" data-module-open="inbox">
-              <i class="fa-solid fa-headset"></i> Abrir Atendimento
-            </button>
-          </div>
+          <button id="add-widget-button" class="btn secondary" type="button"><span data-icon="plus"></span> Widget</button>
         </header>
-
-        <div class="dashboard-scroll">
-          <div class="hero-panel">
-            <div>
-              <span class="status-pill">
-                <span class="live-dot"></span> Operação em tempo real
-              </span>
-              <h2>Central inteligente de atendimento, vendas e automações.</h2>
-              <p>Monitore leads, conversões, tempo de resposta e receita gerada na sua operação.</p>
-            </div>
-            <div class="hero-metrics">
-              <div>
-                <strong id="hero-score">0%</strong>
-                <span>Eficiência operacional</span>
-              </div>
-              <div>
-                <strong id="hero-ai">0</strong>
-                <span>Ações de IA hoje</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="kpi-grid">
-            <article class="kpi-card"><div class="kpi-icon accent"><i class="fa-solid fa-user-plus"></i></div><div><span>Leads recebidos</span><strong id="kpi-leads">0</strong><small>Últimas 24h</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon success"><i class="fa-solid fa-bullseye"></i></div><div><span>Conversões</span><strong id="kpi-conversions">0</strong><small>Ganhas</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon warning"><i class="fa-solid fa-comments"></i></div><div><span>Atendimentos ativos</span><strong id="kpi-active">0</strong><small>Em andamento</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon primary"><i class="fa-solid fa-clock"></i></div><div><span>Tempo médio resposta</span><strong id="kpi-response">0m</strong><small>Meta: < 5m</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon violet"><i class="fa-solid fa-users-gear"></i></div><div><span>Eficiência equipe</span><strong id="kpi-efficiency">0%</strong><small>SLA + resoluções</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon money"><i class="fa-solid fa-sack-dollar"></i></div><div><span>Receita gerada</span><strong id="kpi-revenue">R$ 0</strong><small>Pipeline fechado</small></div></article>
-          </div>
-
-          <div class="analytics-grid">
-            <article class="premium-card">
-              <div class="card-heading"><div><p class="eyebrow">Performance</p><h3>Volume por canal</h3></div><i class="fa-solid fa-signal"></i></div>
-              <div class="channel-list">
-                <div class="channel-row"><span><i class="fa-brands fa-whatsapp"></i> WhatsApp</span><div class="bar"><div style="width: 78%"></div></div><strong>78%</strong></div>
-                <div class="channel-row"><span><i class="fa-brands fa-instagram"></i> Instagram</span><div class="bar"><div style="width: 42%"></div></div><strong>42%</strong></div>
-              </div>
-            </article>
-            <article class="premium-card">
-              <div class="card-heading"><div><p class="eyebrow">Inteligência Artificial</p><h3>Insights operacionais</h3></div><i class="fa-solid fa-brain"></i></div>
-              <ul class="insight-list" id="dashboard-insights"></ul>
-            </article>
-          </div>
+        <div id="dashboard-widgets" class="dashboard-grid"></div>
+        <div id="dashboard-empty" class="empty-state">
+          <span data-icon="layout-dashboard"></span>
+          <h2>Nenhum widget configurado</h2>
+          <p>Adicione KPIs, graficos e cards conforme os dados reais da empresa estiverem conectados.</p>
         </div>
       </section>
 
-      <section id="module-dashboard-agendamentos" class="app-module" aria-labelledby="dashboard-agendamentos-title">
+      <section id="module-inbox" class="module">
         <header class="module-header">
           <div>
-            <p class="eyebrow">Gestão e Fluxo</p>
-            <h1 id="dashboard-agendamentos-title">Dashboard de Agendamentos</h1>
+            <p class="eyebrow">Atendimento</p>
+            <h1>Central omnichannel</h1>
           </div>
-          <div class="header-actions">
-            <button class="btn btn-ghost" type="button" id="btn-refresh-agenda-dash">
-              <i class="fa-solid fa-rotate"></i> Atualizar Métricas
-            </button>
-            <button class="btn btn-primary" type="button" data-module-open="agenda">
-              <i class="fa-solid fa-calendar-check"></i> Abrir Agenda
-            </button>
-          </div>
+          <button id="new-conversation-button" class="btn secondary" type="button"><span data-icon="message-square-plus"></span> Conversa</button>
         </header>
-
-        <div class="dashboard-scroll">
-          <div class="kpi-grid">
-            <article class="kpi-card"><div class="kpi-icon primary"><i class="fa-solid fa-calendar-day"></i></div><div><span>Consultas Hoje</span><strong id="kpi-consultas-hoje">0</strong><small>Agendadas</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon success"><i class="fa-solid fa-check-double"></i></div><div><span>Confirmadas</span><strong id="kpi-consultas-confirmadas">0</strong><small>Pelo Bot via WhatsApp</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon danger"><i class="fa-solid fa-calendar-xmark"></i></div><div><span>Cancelamentos</span><strong id="kpi-consultas-canceladas">0</strong><small>Últimas 24h</small></div></article>
-            <article class="kpi-card"><div class="kpi-icon violet"><i class="fa-solid fa-user-check"></i></div><div><span>Comparecimento</span><strong id="kpi-comparecimento">0%</strong><small>Média semanal</small></div></article>
-          </div>
-          
-          <div class="analytics-grid">
-            <article class="premium-card">
-              <div class="card-heading"><div><p class="eyebrow">Status da Agenda</p><h3>Ocupação de Horários</h3></div><i class="fa-solid fa-calendar-week"></i></div>
-              <div class="channel-list">
-                <div class="channel-row"><span><i class="fa-solid fa-sun"></i> Manhã</span><div class="bar"><div style="width: 85%"></div></div><strong>85%</strong></div>
-                <div class="channel-row"><span><i class="fa-solid fa-cloud-sun"></i> Tarde</span><div class="bar"><div style="width: 60%"></div></div><strong>60%</strong></div>
-                <div class="channel-row"><span><i class="fa-solid fa-moon"></i> Noite</span><div class="bar"><div style="width: 20%"></div></div><strong>20%</strong></div>
-              </div>
-            </article>
-            <article class="premium-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-muted);">
-              <i class="fa-solid fa-robot" style="font-size: 40px; margin-bottom: 15px; color: var(--accent);"></i>
-              <h3>Assistente de Marcação Ativo</h3>
-              <p>O n8n está processando e confirmando os agendamentos de forma autônoma via WhatsApp.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="module-inbox" class="app-module" aria-labelledby="inbox-title">
-        <div class="crm-container">
-          <aside class="chat-list-column">
-            <header class="column-header">
-              <div><p class="eyebrow">Omnichannel</p><h2 id="inbox-title">Atendimentos</h2></div>
-              <button class="btn-icon" type="button" id="btn-new-conversation"><i class="fa-solid fa-plus"></i></button>
-            </header>
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input id="conversation-search" type="search" placeholder="Buscar contato ou mensagem..." autocomplete="off" />
+        <div class="split-view">
+          <aside class="panel list-panel">
+            <div class="toolbar">
+              <input id="conversation-search" type="search" aria-label="Buscar contato ou mensagem">
+              <select id="conversation-filter">
+                <option value="all">Todos</option>
+                <option value="open">Abertos</option>
+                <option value="pending">Pendentes</option>
+                <option value="resolved">Resolvidos</option>
+              </select>
             </div>
-            <div class="inbox-filter">
-              <button class="filter-btn active" type="button" data-filter="all">Todos</button>
-              <button class="filter-btn" type="button" data-filter="open">Abertos</button>
-              <button class="filter-btn" type="button" data-filter="pending">Pendentes</button>
-              <button class="filter-btn" type="button" data-filter="resolved">Resolvidos</button>
-            </div>
-            <div id="conversations-list" class="conversations-list"></div>
+            <div id="conversation-list" class="list"></div>
           </aside>
-
-          <section class="chat-window-column">
-            <header class="chat-header">
-              <div class="chat-header-info">
-                <h3 id="active-contact-name">Selecione uma conversa</h3>
-                <p id="active-contact-meta">Nenhum atendimento selecionado</p>
+          <section class="panel chat-panel">
+            <header class="record-header">
+              <div>
+                <h2 id="active-contact-name">Nenhuma conversa selecionada</h2>
+                <p id="active-contact-meta">Aguardando dados reais</p>
               </div>
-              <div class="chat-header-actions">
-                <select id="assign-select" class="assign-select">
-                  <option>Ana Sales</option><option>Bruno CX</option><option>Carla Suporte</option><option>IA Copilot</option>
-                </select>
-                <button class="btn-icon" type="button" id="btn-ai-summary" title="Resumo IA"><i class="fa-solid fa-sparkles"></i></button>
-                <button class="btn-icon" type="button" id="btn-resolve-conversation" title="Resolver"><i class="fa-solid fa-circle-check"></i></button>
-              </div>
+              <button id="resolve-conversation-button" class="icon-button" type="button" title="Resolver"><span data-icon="check-circle"></span></button>
             </header>
-
-            <div id="chat-history" class="chat-history">
-              <div class="empty-state"><i class="fa-regular fa-comments"></i><p>Selecione uma conversa para iniciar.</p></div>
-            </div>
-
-            <div class="macros-bar">
-              <button class="macro-tag" type="button" data-macro="Olá! Sou da Supreme Tech. Como posso te ajudar hoje?">Saudação</button>
-              <button class="macro-tag" type="button" data-macro="Perfeito. Vou verificar isso para você agora.">Verificar</button>
-              <button class="macro-tag ai" type="button" id="btn-ai-suggestion">Sugerir com IA</button>
-            </div>
-
-            <footer id="input-area" class="chat-input-area">
-              <div class="input-tools">
-                <button class="btn-attach" type="button"><i class="fa-solid fa-paperclip"></i></button>
-                <label class="toggle-internal" title="Nota interna">
-                  <input id="toggle-note" type="checkbox" />
-                  <i class="fa-solid fa-lock"></i>
-                </label>
-              </div>
-              <textarea id="msg-input" placeholder="Digite sua mensagem ao cliente..." rows="1"></textarea>
-              <button id="btn-send" class="btn-send" type="button"><i class="fa-solid fa-paper-plane"></i></button>
-            </footer>
+            <div id="chat-history" class="chat-history empty-state compact">Selecione uma conversa.</div>
+            <form id="message-form" class="message-form">
+              <textarea id="message-input" rows="1" aria-label="Digite a mensagem"></textarea>
+              <label class="switch"><input id="internal-note-toggle" type="checkbox"> Nota interna</label>
+              <button class="btn primary" type="submit"><span data-icon="send"></span></button>
+            </form>
           </section>
-
-          <aside class="crm-details-column">
-            <section class="crm-section profile-card">
-              <div class="contact-avatar-lg" id="details-avatar">ST</div>
-              <h3 id="details-name">Contato</h3>
-              <p id="details-company">Empresa</p>
-              <div class="tag-row" id="details-tags"></div>
-            </section>
-            <section class="crm-section">
-              <h3>Dados inteligentes</h3>
-              <div class="info-row"><span>Canal</span><strong id="details-channel">-</strong></div>
-              <div class="info-row"><span>Telefone</span><strong id="details-phone">-</strong></div>
-              <div class="info-row"><span>Valor</span><strong id="details-value">-</strong></div>
-              <div class="info-row"><span>Sentimento</span><strong id="details-sentiment">-</strong></div>
-            </section>
-            <section class="crm-section ai-panel">
-              <h3><i class="fa-solid fa-brain"></i> Copilot IA</h3>
-              <p id="ai-summary-output">Gere um resumo automático para visualizar o contexto da conversa.</p>
-              <button class="btn btn-secondary full" type="button" id="btn-analyze-sentiment">
-                <i class="fa-solid fa-face-smile"></i> Analisar sentimento
-              </button>
-            </section>
-          </aside>
         </div>
       </section>
 
-      <section id="module-crm" class="app-module" aria-labelledby="crm-title">
+      <section id="module-crm" class="module">
         <header class="module-header">
-          <div><p class="eyebrow">Pipeline comercial</p><h1 id="crm-title">CRM Visual</h1></div>
-          <div class="header-actions">
-            <button class="btn btn-ghost" type="button" id="btn-add-opportunity"><i class="fa-solid fa-plus"></i> Nova oportunidade</button>
+          <div>
+            <p class="eyebrow">Receita</p>
+            <h1>CRM visual dinamico</h1>
+          </div>
+          <div class="actions">
+            <button id="new-pipeline-button" class="btn secondary" type="button"><span data-icon="columns-3"></span> Funil</button>
+            <button id="new-stage-button" class="btn secondary" type="button"><span data-icon="panel-top"></span> Etapa</button>
+            <button id="new-deal-button" class="btn primary" type="button"><span data-icon="plus"></span> Oportunidade</button>
           </div>
         </header>
+        <div class="toolbar">
+          <select id="pipeline-select"></select>
+          <button id="edit-pipeline-button" class="btn ghost" type="button"><span data-icon="settings"></span> Configurar funil</button>
+        </div>
         <div id="kanban-board" class="kanban-board"></div>
+        <div id="crm-empty" class="empty-state">
+          <span data-icon="git-branch"></span>
+          <h2>Nenhum funil criado</h2>
+          <p>Crie funis, etapas e oportunidades para operar o CRM com dados reais.</p>
+        </div>
       </section>
 
-      <section id="module-automations" class="app-module" aria-labelledby="automation-title">
+      <section id="module-agenda" class="module">
         <header class="module-header">
-          <div><p class="eyebrow">Fluxos inteligentes</p><h1 id="automation-title">Automações</h1></div>
-          <div class="header-actions">
-            <button class="btn btn-primary" type="button" id="btn-create-automation"><i class="fa-solid fa-wand-magic-sparkles"></i> Criar automação</button>
+          <div>
+            <p class="eyebrow">Agenda</p>
+            <h1>Agenda inteligente</h1>
+          </div>
+          <button id="new-appointment-button" class="btn primary" type="button"><span data-icon="calendar-plus"></span> Agendamento</button>
+        </header>
+        <div class="toolbar">
+          <button class="btn ghost" data-agenda-view="day" type="button">Dia</button>
+          <button class="btn ghost" data-agenda-view="week" type="button">Semana</button>
+          <button class="btn ghost" data-agenda-view="month" type="button">Mes</button>
+          <button id="agenda-prev" class="icon-button" type="button"><span data-icon="chevron-left"></span></button>
+          <strong id="agenda-label"></strong>
+          <button id="agenda-next" class="icon-button" type="button"><span data-icon="chevron-right"></span></button>
+        </div>
+        <div id="agenda-grid" class="agenda-grid"></div>
+      </section>
+
+      <section id="module-management" class="module">
+        <header class="module-header">
+          <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Gestao empresarial configuravel</h1>
+          </div>
+          <div class="actions">
+            <button id="new-category-button" class="btn secondary" type="button"><span data-icon="folder-plus"></span> Categoria</button>
+            <button id="new-indicator-button" class="btn secondary" type="button"><span data-icon="activity"></span> Indicador</button>
+            <button id="new-goal-button" class="btn secondary" type="button"><span data-icon="target"></span> Meta</button>
+            <button id="new-process-button" class="btn secondary" type="button"><span data-icon="workflow"></span> Processo</button>
           </div>
         </header>
-        <div class="module-scroll">
-          <div class="automation-grid" id="automation-grid"></div>
-          <article class="premium-card flow-card">
-            <div class="card-heading"><div><p class="eyebrow">Builder visual</p><h3>Exemplo de fluxo</h3></div><i class="fa-solid fa-code-branch"></i></div>
-            <div class="flow-line">
-              <div class="flow-node trigger"><i class="fa-brands fa-whatsapp"></i> Novo lead</div><div class="flow-arrow"></div>
-              <div class="flow-node ai-node"><i class="fa-solid fa-brain"></i> IA sugere resposta</div><div class="flow-arrow"></div>
-              <div class="flow-node success-node"><i class="fa-solid fa-diagram-project"></i> Criar oportunidade</div>
-            </div>
+        <div id="management-grid" class="cards-grid"></div>
+        <div id="management-empty" class="empty-state">
+          <span data-icon="building-2"></span>
+          <h2>Nenhuma estrutura configurada</h2>
+          <p>Crie categorias, indicadores, relatorios, metas e processos internos.</p>
+        </div>
+      </section>
+
+      <section id="module-automations" class="module">
+        <header class="module-header">
+          <div>
+            <p class="eyebrow">Fluxos</p>
+            <h1>Automacoes</h1>
+          </div>
+          <button id="new-automation-button" class="btn primary" type="button"><span data-icon="wand"></span> Automacao</button>
+        </header>
+        <div id="automation-list" class="cards-grid"></div>
+      </section>
+
+      <section id="module-marketplace" class="module">
+        <header class="module-header">
+          <div>
+            <p class="eyebrow">Expansao</p>
+            <h1>Marketplace de modulos</h1>
+          </div>
+        </header>
+        <div id="marketplace-list" class="cards-grid"></div>
+      </section>
+
+      <section id="module-settings" class="module">
+        <header class="module-header">
+          <div>
+            <p class="eyebrow">Administracao</p>
+            <h1>Configuracoes, usuarios e auditoria</h1>
+          </div>
+        </header>
+        <div class="settings-grid">
+          <article class="panel">
+            <h2>Identidade visual</h2>
+            <form id="brand-form" class="stack">
+              <label class="field">Nome exibido<input id="brand-name" type="text"></label>
+              <label class="field">URL da logomarca<input id="brand-logo-url" type="url"></label>
+              <div class="form-row">
+                <label class="field">Cor primaria<input id="brand-primary" type="color" value="#d4af37"></label>
+                <label class="field">Cor de acao<input id="brand-accent" type="color" value="#00d2ff"></label>
+              </div>
+              <button class="btn primary" type="submit"><span data-icon="save"></span> Salvar identidade</button>
+            </form>
+          </article>
+          <article class="panel">
+            <h2>Usuarios e RBAC</h2>
+            <button id="new-user-button" class="btn secondary" type="button"><span data-icon="user-plus"></span> Usuario</button>
+            <div id="users-list" class="list"></div>
+          </article>
+          <article class="panel">
+            <h2>Auditoria</h2>
+            <div id="audit-list" class="timeline"></div>
+          </article>
+          <article class="panel">
+            <h2>Notificacoes</h2>
+            <div id="notification-list" class="timeline"></div>
           </article>
         </div>
       </section>
-
-      <section id="module-management" class="app-module" aria-labelledby="management-title">
-        <header class="module-header">
-          <div><p class="eyebrow">Backoffice</p><h1 id="management-title">Gestão Empresarial</h1></div>
-          <div class="header-actions"><button class="btn btn-ghost" type="button" id="btn-export-report"><i class="fa-solid fa-file-export"></i> Exportar</button></div>
-        </header>
-        <div class="module-scroll">
-          <div class="management-grid">
-            <article class="kpi-card"><div class="kpi-icon money"><i class="fa-solid fa-receipt"></i></div><div><span>MRR contratado</span><strong>R$ 48.900</strong></div></article>
-            <article class="kpi-card"><div class="kpi-icon success"><i class="fa-solid fa-file-signature"></i></div><div><span>Contratos ativos</span><strong>23</strong></div></article>
-            <article class="kpi-card"><div class="kpi-icon warning"><i class="fa-solid fa-triangle-exclamation"></i></div><div><span>Cobranças</span><strong>4 pendentes</strong></div></article>
-          </div>
-          <div class="table-card">
-            <div class="card-heading"><div><p class="eyebrow">Contratos</p><h3>Base empresarial</h3></div><i class="fa-solid fa-building"></i></div>
-            <div class="table-wrapper">
-              <table class="tech-table">
-                <thead><tr><th>Cliente</th><th>Plano</th><th>Status</th><th>MRR</th><th>Vencimento</th></tr></thead>
-                <tbody id="contracts-table"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="module-agenda" class="app-module" aria-labelledby="agenda-title">
-        <header class="module-header">
-          <div><p class="eyebrow">Operacional</p><h1 id="agenda-title">Agenda Inteligente</h1></div>
-        </header>
-        <div class="module-scroll">
-          <div class="premium-card" style="text-align: center; padding: 60px; color: var(--text-muted);">
-            <i class="fa-solid fa-calendar-check" style="font-size: 40px; color: var(--primary); margin-bottom: 20px;"></i>
-            <h3>Módulo Integrado via n8n</h3>
-            <p>A gestão de horários com IA está ativada no seu plano.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="module-pedidos" class="app-module" aria-labelledby="pedidos-title">
-        <header class="module-header">
-          <div><p class="eyebrow">Operacional</p><h1 id="pedidos-title">Delivery e Mesas</h1></div>
-        </header>
-        <div class="module-scroll">
-          <div class="premium-card" style="text-align: center; padding: 60px; color: var(--text-muted);">
-            <i class="fa-solid fa-motorcycle" style="font-size: 40px; color: var(--accent); margin-bottom: 20px;"></i>
-            <h3>Módulo de Delivery Ativo</h3>
-            <p>Seus pedidos do WhatsApp cairão diretamente nesta tela.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="module-cardapio" class="app-module">
-        <header class="module-header"><div><p class="eyebrow">Estoque</p><h1>Gestão de Cardápio</h1></div></header>
-      </section>
-
-      <section id="module-settings" class="app-module" aria-labelledby="settings-title">
-        <header class="module-header">
-          <div><p class="eyebrow">Administração</p><h1 id="settings-title">Configurações</h1></div>
-        </header>
-        <div class="module-scroll">
-          <div class="settings-grid">
-            <article class="settings-card white-label-card">
-              <h3><i class="fa-solid fa-paint-brush"></i> Identidade Visual White-Label</h3>
-              <div class="crm-field">
-                <label for="wl-logo-file">Upload da logomarca</label>
-                <div class="file-upload-wrapper">
-                  <input type="file" id="wl-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="file-input-tech" />
-                  <label for="wl-logo-file" class="file-btn"><i class="fa-solid fa-upload"></i> Escolher</label>
-                  <span id="file-name-display">Nenhum selecionado</span>
-                </div>
-              </div>
-              <div class="crm-field">
-                <label for="wl-logo-url">Ou URL da logomarca</label>
-                <input type="url" id="wl-logo-url" class="form-control-sm" placeholder="https://site.com/logo.png" />
-              </div>
-              <div class="color-pickers-row">
-                <div class="crm-field"><label for="wl-bg">Fundo</label><input type="color" id="wl-bg" class="color-picker-lg" value="#070B16" /></div>
-                <div class="crm-field"><label for="wl-primary">Primária</label><input type="color" id="wl-primary" class="color-picker-lg" value="#D4AF37" /></div>
-                <div class="crm-field"><label for="wl-accent">Ação</label><input type="color" id="wl-accent" class="color-picker-lg" value="#00D2FF" /></div>
-              </div>
-              <button class="btn btn-primary glow-effect mt-20" type="button" id="btn-apply-whitelabel"><i class="fa-solid fa-save"></i> Aplicar identidade</button>
-            </article>
-
-            <article class="settings-card">
-              <h3><i class="fa-solid fa-server"></i> Conexão Backend Proxy</h3>
-              <div class="crm-field"><label for="backend-url">URL do Webhook (n8n)</label><input type="url" id="backend-url" class="form-control-sm" /></div>
-              <div class="crm-field"><label for="chatwoot-account">Account ID Chatwoot</label><input type="text" id="chatwoot-account" class="form-control-sm" /></div>
-              <button class="btn btn-secondary mt-20" type="button" id="btn-save-backend"><i class="fa-solid fa-shield-halved"></i> Salvar conexão segura</button>
-            </article>
-
-            <article class="settings-card">
-              <h3><i class="fa-solid fa-robot"></i> Inteligência Artificial</h3>
-              <div class="crm-field">
-                <label for="ai-tone">Tom de voz</label>
-                <select id="ai-tone" class="form-control-sm">
-                  <option>Consultivo e premium</option><option>Objetivo e técnico</option><option>Comercial</option><option>Suporte humanizado</option>
-                </select>
-              </div>
-              <div class="crm-field">
-                <label for="ai-autosummary">Resumo automático</label>
-                <select id="ai-autosummary" class="form-control-sm"><option>Ativado</option><option>Desativado</option></select>
-              </div>
-              <button class="btn btn-secondary mt-20" type="button" id="btn-save-ai"><i class="fa-solid fa-brain"></i> Salvar IA</button>
-            </article>
-          </div>
-        </div>
-      </section>
-
     </main>
   </div>
 
-  <div id="tech-toast-container" aria-live="polite" aria-atomic="true"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+  <div id="modal-root" class="modal-root" hidden></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>

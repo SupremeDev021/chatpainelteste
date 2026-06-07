@@ -1,0 +1,10 @@
+{
+  "name": "Supreme Tech Platform",
+  "short_name": "Supreme Tech",
+  "description": "Plataforma SaaS Supreme Tech para clientes e administracao.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070b16",
+  "theme_color": "#070b16",
+  "icons": []
+}
