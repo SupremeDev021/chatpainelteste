@@ -49,7 +49,7 @@
         <img id="client-logo-sidebar" class="brand-logo" src="https://dummyimage.com/96x96/111827/d4af37.png&text=ST" alt="Logo Cliente" />
       </div>
 
-      <nav class="saas-menu"></nav>
+      <nav class="saas-menu" id="dynamic-menu"></nav>
 
       <div class="saas-profile" title="Perfil e Sessão" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
         <div class="avatar-sm">ST</div>
@@ -59,15 +59,14 @@
       </div>
     </aside>
 
-    <main class="saas-content">
+    <main class="saas-content" id="main-content-area">
       
-      <section id="module-dashboard" class="app-module active" aria-labelledby="dashboard-title">
+      <section id="module-dashboard-leads" class="app-module" aria-labelledby="dashboard-leads-title">
         <header class="module-header">
           <div>
-            <p class="eyebrow">Visão executiva</p>
-            <h1 id="dashboard-title">Dashboard Principal</h1>
+            <p class="eyebrow">Captação e Conversão</p>
+            <h1 id="dashboard-leads-title">Dashboard de Leads</h1>
           </div>
-
           <div class="header-actions">
             <button class="btn btn-ghost" type="button" id="btn-refresh-dashboard">
               <i class="fa-solid fa-rotate"></i> Atualizar
@@ -119,6 +118,48 @@
             <article class="premium-card">
               <div class="card-heading"><div><p class="eyebrow">Inteligência Artificial</p><h3>Insights operacionais</h3></div><i class="fa-solid fa-brain"></i></div>
               <ul class="insight-list" id="dashboard-insights"></ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="module-dashboard-agendamentos" class="app-module" aria-labelledby="dashboard-agendamentos-title">
+        <header class="module-header">
+          <div>
+            <p class="eyebrow">Gestão e Fluxo</p>
+            <h1 id="dashboard-agendamentos-title">Dashboard de Agendamentos</h1>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-ghost" type="button" id="btn-refresh-agenda-dash">
+              <i class="fa-solid fa-rotate"></i> Atualizar Métricas
+            </button>
+            <button class="btn btn-primary" type="button" data-module-open="agenda">
+              <i class="fa-solid fa-calendar-check"></i> Abrir Agenda
+            </button>
+          </div>
+        </header>
+
+        <div class="dashboard-scroll">
+          <div class="kpi-grid">
+            <article class="kpi-card"><div class="kpi-icon primary"><i class="fa-solid fa-calendar-day"></i></div><div><span>Consultas Hoje</span><strong id="kpi-consultas-hoje">0</strong><small>Agendadas</small></div></article>
+            <article class="kpi-card"><div class="kpi-icon success"><i class="fa-solid fa-check-double"></i></div><div><span>Confirmadas</span><strong id="kpi-consultas-confirmadas">0</strong><small>Pelo Bot via WhatsApp</small></div></article>
+            <article class="kpi-card"><div class="kpi-icon danger"><i class="fa-solid fa-calendar-xmark"></i></div><div><span>Cancelamentos</span><strong id="kpi-consultas-canceladas">0</strong><small>Últimas 24h</small></div></article>
+            <article class="kpi-card"><div class="kpi-icon violet"><i class="fa-solid fa-user-check"></i></div><div><span>Comparecimento</span><strong id="kpi-comparecimento">0%</strong><small>Média semanal</small></div></article>
+          </div>
+          
+          <div class="analytics-grid">
+            <article class="premium-card">
+              <div class="card-heading"><div><p class="eyebrow">Status da Agenda</p><h3>Ocupação de Horários</h3></div><i class="fa-solid fa-calendar-week"></i></div>
+              <div class="channel-list">
+                <div class="channel-row"><span><i class="fa-solid fa-sun"></i> Manhã</span><div class="bar"><div style="width: 85%"></div></div><strong>85%</strong></div>
+                <div class="channel-row"><span><i class="fa-solid fa-cloud-sun"></i> Tarde</span><div class="bar"><div style="width: 60%"></div></div><strong>60%</strong></div>
+                <div class="channel-row"><span><i class="fa-solid fa-moon"></i> Noite</span><div class="bar"><div style="width: 20%"></div></div><strong>20%</strong></div>
+              </div>
+            </article>
+            <article class="premium-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-muted);">
+              <i class="fa-solid fa-robot" style="font-size: 40px; margin-bottom: 15px; color: var(--accent);"></i>
+              <h3>Assistente de Marcação Ativo</h3>
+              <p>O n8n está processando e confirmando os agendamentos de forma autônoma via WhatsApp.</p>
             </article>
           </div>
         </div>
