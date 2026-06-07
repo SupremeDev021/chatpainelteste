@@ -39,6 +39,8 @@ const ICONS = {
   "columns-3": "<rect width='18' height='18' x='3' y='3' rx='2'/><path d='M9 3v18M15 3v18'/>",
   "folder-plus": "<path d='M12 10v6M9 13h6'/><path d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'/>",
   "git-branch": "<line x1='6' x2='6' y1='3' y2='15'/><circle cx='18' cy='6' r='3'/><circle cx='6' cy='18' r='3'/><path d='M18 9a9 9 0 0 1-9 9'/>",
+  "git-pull-request-arrow": "<circle cx='18' cy='18' r='3'/><circle cx='6' cy='6' r='3'/><path d='M6 9v6a3 3 0 0 0 3 3h6'/><path d='m15 9 3-3 3 3'/>",
+  grip: "<circle cx='9' cy='5' r='1'/><circle cx='9' cy='12' r='1'/><circle cx='9' cy='19' r='1'/><circle cx='15' cy='5' r='1'/><circle cx='15' cy='12' r='1'/><circle cx='15' cy='19' r='1'/>",
   "layout-dashboard": "<rect width='7' height='9' x='3' y='3' rx='1'/><rect width='7' height='5' x='14' y='3' rx='1'/><rect width='7' height='9' x='14' y='12' rx='1'/><rect width='7' height='5' x='3' y='16' rx='1'/>",
   "log-in": "<path d='M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'/><path d='m10 17 5-5-5-5'/><path d='M15 12H3'/>",
   "log-out": "<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/><path d='m16 17 5-5-5-5'/><path d='M21 12H9'/>",
@@ -46,11 +48,14 @@ const ICONS = {
   "messages-square": "<path d='M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z'/><path d='M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1'/>",
   "panel-top": "<rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/>",
   plus: "<path d='M5 12h14M12 5v14'/>",
+  "refresh-cw": "<path d='M3 12a9 9 0 0 1 15-6.7L21 8'/><path d='M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16'/><path d='M3 21v-5h5'/>",
   save: "<path d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z'/><path d='M17 21v-8H7v8M7 3v5h8'/>",
   send: "<path d='m22 2-7 20-4-9-9-4Z'/><path d='M22 2 11 13'/>",
   settings: "<path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z'/><circle cx='12' cy='12' r='3'/>",
   "shopping-bag": "<path d='M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z'/><path d='M3 6h18M16 10a4 4 0 0 1-8 0'/>",
+  sparkles: "<path d='m12 3-1.9 4.7L5.5 9.5l4.6 1.8L12 16l1.9-4.7 4.6-1.8-4.6-1.8Z'/><path d='M5 3v4M3 5h4M19 15v6M16 18h6'/>",
   target: "<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>",
+  "user-round-plus": "<circle cx='8' cy='8' r='4'/><path d='M2 20a6 6 0 0 1 12 0'/><path d='M18 10v8M14 14h8'/>",
   "user-plus": "<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M19 8v6M22 11h-6'/>",
   wand: "<path d='M15 4V2M15 16v-2M8 9H6M20 9h-2M17.8 6.2 19 5M11 13l-7 7M4 20l10.6-10.6a2 2 0 0 0-2.8-2.8L1.2 17.2a2 2 0 0 0 2.8 2.8Z'/>",
   workflow: "<rect width='8' height='8' x='3' y='3' rx='2'/><rect width='8' height='8' x='13' y='13' rx='2'/><path d='M11 7h4a2 2 0 0 1 2 2v4'/>"
@@ -177,11 +182,16 @@ function logout(record = true) {
 function ensureTenant(company) {
   company.data ||= {};
   company.data.conversations ||= [];
+  company.data.leads ||= [];
   company.data.pipelines ||= [];
   company.data.appointments ||= [];
+  company.data.tasks ||= [];
+  company.data.crmRoutingRules ||= [];
   company.data.management ||= { categories: [], indicators: [], reports: [], goals: [], processes: [] };
   company.data.automations ||= [];
   company.data.dashboardWidgets ||= [];
+  company.dashboardConfig ||= defaultDashboardConfig();
+  company.instance ||= {};
   company.users ||= [ownerUser(company)];
   company.rbac ||= ROLE_PRESETS;
   company.modules ||= ["dashboard", "settings"];
@@ -250,7 +260,14 @@ function renderActiveModule() {
 
 function bindModuleEvents() {
   on("add-widget-button", "click", () => openWidgetModal());
+  on("restore-dashboard-button", "click", restoreDashboardDefaults);
+  on("toggle-kpi-widget", "click", () => toggleDashboardKind("kpi"));
+  on("toggle-chart-widget", "click", () => toggleDashboardKind("chart"));
+  on("toggle-table-widget", "click", () => toggleDashboardKind("table"));
+  on("toggle-ranking-widget", "click", () => toggleDashboardKind("ranking"));
+  on("toggle-calendar-widget", "click", () => toggleDashboardKind("calendar"));
   on("new-conversation-button", "click", () => openConversationModal());
+  on("quick-lead-button", "click", createLeadFromActiveConversation);
   on("conversation-search", "input", renderInbox);
   on("conversation-filter", "change", renderInbox);
   on("message-form", "submit", sendMessage);
@@ -258,8 +275,11 @@ function bindModuleEvents() {
   on("new-pipeline-button", "click", () => openPipelineModal());
   on("edit-pipeline-button", "click", () => openPipelineModal(document.getElementById("pipeline-select").value));
   on("new-stage-button", "click", () => openStageModal());
+  on("new-lead-button", "click", () => openLeadModal());
   on("new-deal-button", "click", () => openDealModal());
   on("pipeline-select", "change", renderCrm);
+  on("crm-search", "input", renderCrm);
+  on("crm-stage-filter", "change", renderCrm);
   on("new-appointment-button", "click", () => openAppointmentModal());
   document.querySelectorAll("[data-agenda-view]").forEach(btn => btn.addEventListener("click", () => {
     agendaView = btn.dataset.agendaView;
@@ -274,33 +294,194 @@ function bindModuleEvents() {
   on("new-automation-button", "click", () => openAutomationModal());
   on("brand-form", "submit", saveBrand);
   on("new-user-button", "click", () => openUserModal());
+  on("new-routing-rule-button", "click", () => openRoutingRuleModal());
 }
 
 function renderDashboard() {
+  const widgets = activeDashboardWidgets();
+  document.getElementById("dashboard-hero").innerHTML = renderDashboardHero();
+  document.getElementById("dashboard-summary").innerHTML = renderDashboardSummary();
+  syncDashboardToggles();
   const list = document.getElementById("dashboard-widgets");
   const empty = document.getElementById("dashboard-empty");
-  const widgets = tenant.data.dashboardWidgets;
   empty.hidden = widgets.length > 0;
-  list.innerHTML = widgets.map(widget => `
-    <article class="metric-card">
-      <span>${escapeHtml(widget.type)}</span>
-      <strong>${escapeHtml(widget.label)}</strong>
-      <small>Fonte: ${escapeHtml(widget.source || "Aguardando integracao")}</small>
-      ${actionButtons("dashboardWidgets", widget.id)}
-    </article>
-  `).join("");
+  list.innerHTML = widgets.map(widget => renderDashboardWidget(widget)).join("");
+  bindDashboardInteractions();
 }
 
 function openWidgetModal(id) {
-  const current = tenant.data.dashboardWidgets.find(item => item.id === id);
-  openFormModal(current ? "Editar widget" : "Novo widget", [
-    inputField("label", "Nome do widget", current?.label),
-    selectField("type", "Tipo", ["KPI", "Grafico", "Card", "Tabela"], current?.type),
-    inputField("source", "Fonte de dados", current?.source)
+  const config = tenant.dashboardConfig || defaultDashboardConfig();
+  const hidden = dashboardTemplates().filter(widget => config.hiddenWidgets.includes(widget.id));
+  const current = hidden.find(item => item.id === id);
+  if (!current && !hidden.length) return toast("Todos os widgets principais ja estao visiveis.", "info");
+  openFormModal("Adicionar widget", [
+    selectField("widgetId", "Bloco", hidden.map(item => ({ value: item.id, label: item.title })), current?.id || hidden[0]?.id)
   ], values => {
-    upsert(tenant.data.dashboardWidgets, { id, ...values });
-    persistTenant("dashboard_widget_saved", "Widget do dashboard salvo");
+    config.hiddenWidgets = config.hiddenWidgets.filter(item => item !== values.widgetId);
+    if (!config.order.includes(values.widgetId)) config.order.push(values.widgetId);
+    tenant.dashboardConfig = config;
+    persistTenant("dashboard_widget_added", "Widget adicionado ao dashboard");
     renderDashboard();
+  });
+}
+
+function renderDashboardHero() {
+  const metrics = dashboardMetrics();
+  return `
+    <article class="hero-panel">
+      <div>
+        <p class="eyebrow">Resumo do dia</p>
+        <h2>${escapeHtml(tenant.name)}</h2>
+        <p class="muted">Acompanhe atendimento, agenda, leads e previsao comercial sem depender de configuracao tecnica.</p>
+      </div>
+      <div class="hero-metrics">
+        <div><span>Conversas abertas</span><strong>${metrics.openConversations}</strong></div>
+        <div><span>Leads hoje</span><strong>${metrics.newLeadsToday}</strong></div>
+        <div><span>Agendamentos hoje</span><strong>${metrics.appointmentsToday}</strong></div>
+      </div>
+    </article>
+  `;
+}
+
+function renderDashboardSummary() {
+  const metrics = dashboardMetrics();
+  return [
+    summaryCard("Semana", `${metrics.appointmentsWeek} agendamentos`, "Agenda prevista"),
+    summaryCard("Conversao", `${metrics.conversionRate}%`, "Leads para oportunidades"),
+    summaryCard("Meta", `${metrics.goalProgress}%`, "Execucao do mes"),
+    summaryCard("Receita", formatCurrency(metrics.revenueMonth), "Previsao mensal")
+  ].join("");
+}
+
+function summaryCard(label, value, caption) {
+  return `<article class="summary-card"><span>${label}</span><strong>${value}</strong><small>${caption}</small></article>`;
+}
+
+function renderDashboardWidget(widget) {
+  return `
+    <article class="dashboard-widget ${widget.kind}" draggable="true" data-widget-id="${widget.id}">
+      <header>
+        <div>
+          <p class="eyebrow">${escapeHtml(widget.group)}</p>
+          <h3>${escapeHtml(widget.title)}</h3>
+        </div>
+        <div class="actions">
+          <button class="icon-button" type="button" title="Reordenar">${icon("grip")}</button>
+          <button class="icon-button" type="button" data-hide-widget="${widget.id}" title="Ocultar">${icon("chevron-right")}</button>
+        </div>
+      </header>
+      <div class="widget-body">${widget.render()}</div>
+    </article>
+  `;
+}
+
+function activeDashboardWidgets() {
+  const config = tenant.dashboardConfig || defaultDashboardConfig();
+  const templates = dashboardTemplates().filter(widget => {
+    if (config.hiddenWidgets.includes(widget.id)) return false;
+    if (!config.visibleKinds[widget.kind]) return false;
+    if (widget.id === "leads_overview" && !dashboardModeAllows("leads")) return false;
+    if (widget.id === "appointments_overview" && !dashboardModeAllows("agenda")) return false;
+    return true;
+  });
+  const byId = new Map(templates.map(item => [item.id, item]));
+  return config.order.map(id => byId.get(id)).filter(Boolean);
+}
+
+function dashboardTemplates() {
+  const metrics = dashboardMetrics();
+  return [
+    {
+      id: "appointments_overview",
+      kind: "calendar",
+      group: "Agenda",
+      title: "Proximos agendamentos",
+      render: () => `
+        <div class="mini-stats">
+          <div><span>Hoje</span><strong>${metrics.appointmentsToday}</strong></div>
+          <div><span>Amanha</span><strong>${metrics.appointmentsTomorrow}</strong></div>
+          <div><span>Semana</span><strong>${metrics.appointmentsWeek}</strong></div>
+        </div>
+        <div class="widget-list">${upcomingAppointments().map(item => `<button class="list-row" type="button" onclick="window.editAppointment('${item.id}')"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.date)} ${escapeHtml(item.time)}</small></button>`).join("") || "<p class='muted'>Nenhum agendamento previsto.</p>"}</div>
+      `
+    },
+    {
+      id: "leads_overview",
+      kind: "kpi",
+      group: "Leads",
+      title: "Leads novos hoje",
+      render: () => `
+        <div class="mini-stats">
+          <div><span>Quantidade</span><strong>${metrics.newLeadsToday}</strong></div>
+          <div><span>Origem principal</span><strong>${escapeHtml(metrics.topLeadSource)}</strong></div>
+          <div><span>Conversao</span><strong>${metrics.conversionRate}%</strong></div>
+        </div>
+      `
+    },
+    {
+      id: "conversations_overview",
+      kind: "table",
+      group: "Atendimento",
+      title: "Conversas pendentes",
+      render: () => `
+        <div class="mini-stats">
+          <div><span>Sem resposta</span><strong>${metrics.openConversations}</strong></div>
+          <div><span>Em andamento</span><strong>${metrics.pendingConversations}</strong></div>
+          <div><span>Aguardando cliente</span><strong>${metrics.waitingCustomer}</strong></div>
+        </div>
+      `
+    },
+    {
+      id: "tasks_overview",
+      kind: "ranking",
+      group: "Equipe",
+      title: "Tarefas da equipe",
+      render: () => `
+        <div class="mini-stats">
+          <div><span>Pendentes</span><strong>${metrics.pendingTasks}</strong></div>
+          <div><span>Concluidas</span><strong>${metrics.doneTasks}</strong></div>
+          <div><span>Atrasadas</span><strong>${metrics.overdueTasks}</strong></div>
+        </div>
+      `
+    },
+    {
+      id: "goals_overview",
+      kind: "chart",
+      group: "Meta",
+      title: "Meta do mes",
+      render: () => `
+        <div class="progress-shell">
+          <div class="progress-label"><strong>${formatCurrency(metrics.goalValue)}</strong><small>${metrics.goalProgress}% concluido</small></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${metrics.goalProgress}%"></div></div>
+          <p class="muted">Projecao atual: ${formatCurrency(metrics.goalProjection)}</p>
+        </div>
+      `
+    },
+    {
+      id: "revenue_overview",
+      kind: "chart",
+      group: "Financeiro",
+      title: "Receita prevista",
+      render: () => `
+        <div class="mini-stats">
+          <div><span>Semana</span><strong>${formatCurrency(metrics.revenueWeek)}</strong></div>
+          <div><span>Mes</span><strong>${formatCurrency(metrics.revenueMonth)}</strong></div>
+          <div><span>Trimestre</span><strong>${formatCurrency(metrics.revenueQuarter)}</strong></div>
+        </div>
+      `
+    }
+  ];
+}
+
+function bindDashboardInteractions() {
+  document.querySelectorAll("[data-hide-widget]").forEach(button => button.addEventListener("click", () => hideDashboardWidget(button.dataset.hideWidget)));
+  document.querySelectorAll("[data-widget-id]").forEach(card => {
+    card.addEventListener("dragstart", event => event.dataTransfer.setData("text/plain", card.dataset.widgetId));
+    card.addEventListener("dragover", event => event.preventDefault());
+    card.addEventListener("drop", event => {
+      event.preventDefault();
+      reorderDashboardWidget(event.dataTransfer.getData("text/plain"), card.dataset.widgetId);
+    });
   });
 }
 
@@ -310,13 +491,14 @@ function renderInbox() {
   const filter = value("conversation-filter") || "all";
   const conversations = tenant.data.conversations.filter(item => {
     const matchesFilter = filter === "all" || item.status === filter;
-    const searchable = `${item.contactName} ${item.channel} ${item.phone} ${(item.messages || []).map(m => m.text).join(" ")}`.toLowerCase();
+    const searchable = `${item.contactName} ${item.channel} ${item.phone} ${(item.labels || []).join(" ")} ${(item.messages || []).map(m => m.text).join(" ")}`.toLowerCase();
     return matchesFilter && searchable.includes(search);
   });
   list.innerHTML = conversations.length ? conversations.map(item => `
     <article class="list-item">
       <strong>${escapeHtml(item.contactName)}</strong>
-      <p class="muted">${escapeHtml(item.channel || "Canal nao informado")}</p>
+      <p class="muted">${escapeHtml(item.channel || "Canal nao informado")} ${item.phone ? `- ${escapeHtml(item.phone)}` : ""}</p>
+      <div class="tag-row">${(item.labels || []).map(label => `<span class="tag">${escapeHtml(label)}</span>`).join("")}</div>
       <span class="status-pill ${item.status}">${statusLabel(item.status)}</span>
       <button class="btn ghost" type="button" data-open-conversation="${item.id}">Abrir</button>
     </article>
@@ -329,12 +511,15 @@ function openConversationModal() {
   openFormModal("Nova conversa", [
     inputField("contactName", "Nome do contato"),
     inputField("phone", "Telefone"),
+    inputField("email", "E-mail", "", "email", false),
     selectField("channel", "Canal", ["WhatsApp", "Instagram", "E-mail", "Telefone"]),
-    selectField("status", "Status", ["open", "pending", "resolved"])
+    selectField("status", "Status", ["open", "pending", "resolved"]),
+    inputField("labels", "Etiquetas", "", "text", false)
   ], values => {
-    const item = { id: uid("conv"), ...values, messages: [], createdAt: nowIso() };
+    const item = { id: uid("conv"), ...values, labels: splitTags(values.labels), messages: [], createdAt: nowIso() };
     tenant.data.conversations.unshift(item);
     activeConversationId = item.id;
+    maybeAutoCreateLeadFromConversation(item);
     persistTenant("conversation_created", "Conversa criada");
     renderInbox();
   });
@@ -354,13 +539,17 @@ function renderConversation() {
     return;
   }
   setText("active-contact-name", conversation.contactName);
-  setText("active-contact-meta", `${conversation.channel || "Canal"} - ${conversation.phone || "Sem telefone"}`);
+  const linkedLead = tenant.data.leads.find(item => item.id === conversation.leadId);
+  setText("active-contact-meta", `${conversation.channel || "Canal"} - ${conversation.phone || "Sem telefone"}${linkedLead ? ` - Lead: ${linkedLead.name}` : ""}`);
   document.getElementById("chat-history").innerHTML = conversation.messages.length ? conversation.messages.map(message => `
     <div class="message ${message.type}">
       ${escapeHtml(message.text)}
       <small>${formatDate(message.createdAt)}</small>
     </div>
   `).join("") : "<div class='empty-state compact'>Nenhuma mensagem registrada.</div>";
+  const button = document.getElementById("quick-lead-button");
+  if (button) button.innerHTML = `${icon("sparkles")} ${linkedLead ? "Abrir lead" : "Criar lead"}`;
+  renderIcons();
 }
 
 function sendMessage(event) {
@@ -392,7 +581,20 @@ function renderCrm() {
   select.innerHTML = tenant.data.pipelines.map(pipe => `<option value="${pipe.id}">${escapeHtml(pipe.name)}</option>`).join("");
   const pipeline = tenant.data.pipelines.find(item => item.id === select.value) || tenant.data.pipelines[0];
   if (pipeline) select.value = pipeline.id;
+  document.getElementById("crm-stage-filter").innerHTML = [`<option value="all">Todas as etapas</option>`, ...(pipeline?.stages || []).sort((a, b) => a.order - b.order).map(stage => `<option value="${stage.id}">${escapeHtml(stage.name)}</option>`)].join("");
   document.getElementById("crm-empty").hidden = Boolean(pipeline);
+  const search = value("crm-search").toLowerCase();
+  const stageFilter = value("crm-stage-filter") || "all";
+  const cards = crmCards(pipeline).filter(item => {
+    const matchesStage = stageFilter === "all" || item.stageId === stageFilter;
+    const searchable = `${item.title || item.name} ${item.company || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
+    return matchesStage && searchable.includes(search);
+  });
+  document.getElementById("crm-stats").innerHTML = [
+    summaryCard("Leads", tenant.data.leads.length, "Base ativa"),
+    summaryCard("Oportunidades", (pipeline?.deals || []).length, "Funil atual"),
+    summaryCard("Conversao", `${dashboardMetrics().conversionRate}%`, "Lead para oportunidade")
+  ].join("");
   document.getElementById("kanban-board").innerHTML = pipeline ? pipeline.stages
     .sort((a, b) => a.order - b.order)
     .map(stage => `
@@ -401,17 +603,19 @@ function renderCrm() {
           <strong>${escapeHtml(stage.name)}</strong>
           <button class="icon-button" data-edit-stage="${stage.id}" type="button">${icon("settings")}</button>
         </header>
-        ${(pipeline.deals || []).filter(deal => deal.stageId === stage.id).map(deal => `
-          <article class="deal-card">
-            <strong>${escapeHtml(deal.title)}</strong>
-            <span>${escapeHtml(deal.company || "")}</span>
-            <span>${formatCurrency(deal.value || 0)}</span>
-            ${actionButtons("deals", deal.id)}
+        ${cards.filter(card => card.stageId === stage.id).map(card => `
+          <article class="deal-card ${card.kind}" draggable="true" data-record-id="${card.id}" data-record-type="${card.kind}">
+            <div class="deal-topline"><span class="status-pill ${card.kind === "lead" ? "suspended" : "active"}">${card.kind === "lead" ? "Lead" : "Oportunidade"}</span><span>${formatCurrency(card.value || 0)}</span></div>
+            <strong>${escapeHtml(card.title)}</strong>
+            <span>${escapeHtml(card.company || card.phone || "")}</span>
+            <div class="tag-row">${(card.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+            ${actionButtons(card.kind === "lead" ? "leads" : "deals", card.id)}
           </article>
-        `).join("") || "<p class='muted'>Sem oportunidades.</p>"}
+        `).join("") || "<p class='muted'>Sem registros nesta etapa.</p>"}
       </section>
     `).join("") : "";
   document.querySelectorAll("[data-edit-stage]").forEach(btn => btn.addEventListener("click", () => openStageModal(btn.dataset.editStage)));
+  bindCrmDragAndDrop();
 }
 
 function openPipelineModal(id) {
@@ -461,6 +665,88 @@ function openDealModal(id) {
     persistTenant("deal_saved", "Oportunidade salva");
     renderCrm();
   });
+}
+
+function openLeadModal(id, prefill = {}, quick = false) {
+  const current = tenant.data.leads.find(item => item.id === id);
+  const pipeline = activePipeline();
+  const rules = pipeline?.stages?.sort((a, b) => a.order - b.order) || [];
+  openFormModal(current ? "Editar lead" : quick ? "Lead rapido" : "Novo lead", [
+    inputField("name", "Nome", current?.name || prefill.name || prefill.contactName || ""),
+    inputField("phone", "Telefone", current?.phone || prefill.phone || ""),
+    ...(quick ? [] : [inputField("email", "E-mail", current?.email || prefill.email || "", "email", true)]),
+    ...(rules.length ? [selectField("stageId", "Etapa", rules.map(stage => ({ value: stage.id, label: stage.name })), current?.stageId || prefill.stageId || rules[0]?.id)] : []),
+    inputField("source", "Origem", current?.source || prefill.source || prefill.channel || "", "text", false),
+    inputField("tags", "Etiquetas", (current?.tags || prefill.tags || []).join(", "), "text", false)
+  ], values => {
+    const route = resolveRoutingForLabels(splitTags(values.tags), pipeline);
+    const lead = upsert(tenant.data.leads, {
+      id,
+      ...current,
+      ...prefill,
+      ...values,
+      pipelineId: current?.pipelineId || prefill.pipelineId || route.pipelineId || pipeline?.id || "",
+      stageId: values.stageId || current?.stageId || prefill.stageId || route.stageId || pipeline?.stages?.[0]?.id || "",
+      source: values.source || prefill.channel || "Manual",
+      tags: splitTags(values.tags),
+      createdAt: current?.createdAt || nowIso(),
+      owner: current?.owner || prefill.owner || session?.userId || ""
+    });
+    persistTenant("lead_saved", "Lead salvo");
+    if (prefill.conversationId) associateLeadToConversation(lead.id, prefill.conversationId);
+    renderCrm();
+    renderDashboard();
+  });
+}
+
+function createLeadFromActiveConversation() {
+  const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
+  if (!conversation) return toast("Selecione uma conversa para criar ou vincular um lead.", "error");
+  if (conversation.leadId) return openLeadModal(conversation.leadId, {}, false);
+  const existing = findLeadByContact(conversation.phone, conversation.email);
+  if (existing) {
+    associateLeadToConversation(existing.id, conversation.id);
+    persistTenant("lead_linked", "Lead associado a conversa");
+    renderConversation();
+    renderDashboard();
+    return toast("Lead existente associado a esta conversa.", "success");
+  }
+  openLeadModal(null, {
+    conversationId: conversation.id,
+    name: conversation.contactName,
+    phone: conversation.phone,
+    email: conversation.email,
+    source: conversation.channel,
+    tags: conversation.labels || []
+  }, true);
+}
+
+function associateLeadToConversation(leadId, conversationId) {
+  const conversation = tenant.data.conversations.find(item => item.id === conversationId);
+  if (conversation) conversation.leadId = leadId;
+}
+
+function maybeAutoCreateLeadFromConversation(conversation) {
+  if (!dashboardModeAllows("leads")) return;
+  const route = resolveRoutingForLabels(conversation.labels || [], activePipeline());
+  if (!route.autoCreate) return;
+  const existing = findLeadByContact(conversation.phone, conversation.email);
+  if (existing) {
+    associateLeadToConversation(existing.id, conversation.id);
+    return;
+  }
+  const lead = upsert(tenant.data.leads, {
+    name: conversation.contactName,
+    phone: conversation.phone,
+    email: conversation.email || "",
+    source: conversation.channel || "Chatwoot",
+    tags: conversation.labels || [],
+    pipelineId: route.pipelineId || activePipeline()?.id || "",
+    stageId: route.stageId || activePipeline()?.stages?.[0]?.id || "",
+    owner: session?.userId || "",
+    createdAt: nowIso()
+  });
+  associateLeadToConversation(lead.id, conversation.id);
 }
 
 function activePipeline() {
@@ -614,6 +900,7 @@ function renderSettings() {
   document.getElementById("brand-primary").value = tenant.brand?.primary || "#d4af37";
   document.getElementById("brand-accent").value = tenant.brand?.accent || "#00d2ff";
   renderUsers();
+  renderRoutingRules();
   renderAudit();
   renderNotifications();
 }
@@ -664,6 +951,39 @@ function openUserModal(id) {
     renderUsers();
   });
 }
+
+function renderRoutingRules() {
+  const list = document.getElementById("routing-rules-list");
+  const rules = tenant.data.crmRoutingRules || [];
+  list.innerHTML = rules.length ? rules.map(rule => `
+    <article class="list-item">
+      <strong>${escapeHtml(rule.label)}</strong>
+      <p class="muted">${escapeHtml(pipelineName(rule.pipelineId))} -> ${escapeHtml(stageName(rule.pipelineId, rule.stageId))}</p>
+      <p class="muted">${rule.autoCreate ? "Cria lead automaticamente" : "Somente sugere roteamento"}</p>
+      <button class="btn ghost" type="button" onclick="window.editRoutingRule('${rule.id}')">Editar</button>
+    </article>
+  `).join("") : "<div class='empty-state compact'>Nenhuma regra configurada.</div>";
+}
+
+function openRoutingRuleModal(id) {
+  const current = (tenant.data.crmRoutingRules || []).find(item => item.id === id);
+  if (!tenant.data.pipelines.length) return toast("Crie um pipeline antes de configurar regras por etiqueta.", "error");
+  const pipeline = tenant.data.pipelines[0];
+  const stageOptions = pipeline?.stages?.sort((a, b) => a.order - b.order).map(stage => ({ value: stage.id, label: stage.name })) || [];
+  openFormModal(current ? "Editar regra CRM" : "Nova regra CRM", [
+    inputField("label", "Etiqueta", current?.label),
+    selectField("pipelineId", "Pipeline", tenant.data.pipelines.map(item => ({ value: item.id, label: item.name })), current?.pipelineId || pipeline?.id),
+    selectField("stageId", "Etapa", stageOptions, current?.stageId || stageOptions[0]?.value),
+    selectField("autoCreate", "Acao", [{ value: "true", label: "Criar lead automaticamente" }, { value: "false", label: "Apenas sugerir" }], String(current?.autoCreate ?? true))
+  ], values => {
+    tenant.data.crmRoutingRules ||= [];
+    upsert(tenant.data.crmRoutingRules, { id, ...values, autoCreate: values.autoCreate === "true" });
+    persistTenant("crm_rule_saved", "Regra de etiquetas salva");
+    renderRoutingRules();
+  });
+}
+
+window.editRoutingRule = id => openRoutingRuleModal(id);
 
 function renderAudit() {
   document.getElementById("audit-list").innerHTML = platform.audit
@@ -787,6 +1107,8 @@ function companyFromSupabase(row, panel = {}) {
     audit: panel.audit || [],
     notifications: panel.notifications || [],
     marketplace: panel.marketplace || defaultMarketplace(),
+    dashboardConfig: panel.dashboardConfig || defaultDashboardConfig(),
+    instance: panel.instance || {},
     createdAt: row.criado_em || panel.createdAt || nowIso()
   };
   company.users = company.users.length ? company.users : [ownerUser(company)];
@@ -808,6 +1130,8 @@ function panelDataFromTenant() {
     audit: tenant.audit || [],
     notifications: tenant.notifications || [],
     marketplace: tenant.marketplace || platform.modules,
+    dashboardConfig: tenant.dashboardConfig || defaultDashboardConfig(),
+    instance: tenant.instance || {},
     updatedAt: nowIso()
   };
 }
@@ -815,12 +1139,181 @@ function panelDataFromTenant() {
 function emptyCompanyData() {
   return {
     conversations: [],
+    leads: [],
     pipelines: [],
     appointments: [],
+    tasks: [],
+    crmRoutingRules: [],
     management: { categories: [], indicators: [], reports: [], goals: [], processes: [] },
     automations: [],
     dashboardWidgets: []
   };
+}
+
+function defaultDashboardConfig() {
+  return {
+    mode: "both",
+    visibleKinds: { kpi: true, chart: true, table: true, ranking: true, calendar: true },
+    order: ["appointments_overview", "leads_overview", "conversations_overview", "tasks_overview", "goals_overview", "revenue_overview"],
+    hiddenWidgets: []
+  };
+}
+
+function dashboardMetrics() {
+  const today = dateIso(new Date());
+  const tomorrow = dateIso(addDays(new Date(), 1));
+  const weekLimit = addDays(new Date(), 7);
+  const appointments = tenant.data.appointments || [];
+  const leads = tenant.data.leads || [];
+  const conversations = tenant.data.conversations || [];
+  const tasks = tenant.data.tasks || tenant.data.management.processes.map(item => ({ ...item, status: item.status || "pending" }));
+  const deals = tenant.data.pipelines.flatMap(pipeline => pipeline.deals || []);
+  const goal = tenant.data.management.goals[0] || {};
+  const goalValue = Number(goal.target || goal.value || 0);
+  const revenueMonth = deals.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const revenueWeek = deals.filter(item => !item.expectedDate || new Date(item.expectedDate) <= weekLimit).reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const convertedLeads = leads.filter(item => item.convertedAt).length;
+  const pendingConversations = conversations.filter(item => item.status === "pending").length;
+  return {
+    appointmentsToday: appointments.filter(item => item.date === today).length,
+    appointmentsTomorrow: appointments.filter(item => item.date === tomorrow).length,
+    appointmentsWeek: appointments.filter(item => new Date(item.date) >= new Date(today) && new Date(item.date) <= weekLimit).length,
+    newLeadsToday: leads.filter(item => (item.createdAt || "").slice(0, 10) === today).length,
+    topLeadSource: topLabel(leads.map(item => item.source || "Manual")) || "Manual",
+    conversionRate: leads.length ? Math.round(convertedLeads / leads.length * 100) : 0,
+    openConversations: conversations.filter(item => item.status === "open").length,
+    pendingConversations,
+    waitingCustomer: conversations.filter(item => item.status === "pending").length,
+    pendingTasks: tasks.filter(item => item.status !== "done").length,
+    doneTasks: tasks.filter(item => item.status === "done").length,
+    overdueTasks: tasks.filter(item => item.status === "overdue").length,
+    goalValue,
+    goalProgress: goalValue ? Math.min(100, Math.round(revenueMonth / goalValue * 100)) : 0,
+    goalProjection: goalValue ? Math.max(revenueMonth, goalValue * 0.82) : revenueMonth,
+    revenueWeek,
+    revenueMonth,
+    revenueQuarter: revenueMonth * 3
+  };
+}
+
+function topLabel(values) {
+  const counts = values.reduce((acc, item) => ({ ...acc, [item]: (acc[item] || 0) + 1 }), {});
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+function upcomingAppointments() {
+  return [...(tenant.data.appointments || [])]
+    .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+    .slice(0, 4);
+}
+
+function toggleDashboardKind(kind) {
+  tenant.dashboardConfig ||= defaultDashboardConfig();
+  tenant.dashboardConfig.visibleKinds[kind] = !tenant.dashboardConfig.visibleKinds[kind];
+  persistTenant("dashboard_layout_changed", "Preferencias de dashboard atualizadas");
+  renderDashboard();
+}
+
+function syncDashboardToggles() {
+  const config = tenant.dashboardConfig || defaultDashboardConfig();
+  const mapping = {
+    "toggle-kpi-widget": "kpi",
+    "toggle-chart-widget": "chart",
+    "toggle-table-widget": "table",
+    "toggle-ranking-widget": "ranking",
+    "toggle-calendar-widget": "calendar"
+  };
+  Object.entries(mapping).forEach(([id, kind]) => document.getElementById(id)?.classList.toggle("active-chip", config.visibleKinds[kind]));
+}
+
+function hideDashboardWidget(widgetId) {
+  tenant.dashboardConfig ||= defaultDashboardConfig();
+  if (!tenant.dashboardConfig.hiddenWidgets.includes(widgetId)) tenant.dashboardConfig.hiddenWidgets.push(widgetId);
+  persistTenant("dashboard_widget_hidden", "Widget ocultado");
+  renderDashboard();
+}
+
+function reorderDashboardWidget(sourceId, targetId) {
+  if (!sourceId || !targetId || sourceId === targetId) return;
+  tenant.dashboardConfig ||= defaultDashboardConfig();
+  const order = tenant.dashboardConfig.order.filter(id => id !== sourceId);
+  order.splice(order.indexOf(targetId), 0, sourceId);
+  tenant.dashboardConfig.order = order;
+  persistTenant("dashboard_widget_reordered", "Widgets reorganizados");
+  renderDashboard();
+}
+
+function restoreDashboardDefaults() {
+  tenant.dashboardConfig = defaultDashboardConfig();
+  persistTenant("dashboard_restored", "Dashboard restaurado");
+  renderDashboard();
+}
+
+function dashboardModeAllows(area) {
+  const mode = tenant.dashboardConfig?.mode || "both";
+  if (mode === "both") return true;
+  if (mode === "none") return false;
+  return mode === area;
+}
+
+function crmCards(pipeline) {
+  if (!pipeline) return [];
+  const deals = (pipeline.deals || []).map(item => ({ ...item, kind: "deal", tags: item.tags || [] }));
+  const leads = tenant.data.leads.filter(item => item.pipelineId === pipeline.id).map(item => ({ ...item, title: item.name, company: item.company || item.email || "", value: Number(item.value || 0), kind: "lead" }));
+  return [...leads, ...deals];
+}
+
+function bindCrmDragAndDrop() {
+  document.querySelectorAll("[data-record-id]").forEach(card => {
+    card.addEventListener("dragstart", event => {
+      event.dataTransfer.setData("record-id", card.dataset.recordId);
+      event.dataTransfer.setData("record-type", card.dataset.recordType);
+    });
+  });
+  document.querySelectorAll("[data-stage]").forEach(column => {
+    column.addEventListener("dragover", event => event.preventDefault());
+    column.addEventListener("drop", event => {
+      event.preventDefault();
+      moveCrmRecord(event.dataTransfer.getData("record-type"), event.dataTransfer.getData("record-id"), column.dataset.stage);
+    });
+  });
+}
+
+function moveCrmRecord(type, id, stageId) {
+  const target = type === "lead" ? tenant.data.leads.find(item => item.id === id) : activePipeline().deals.find(item => item.id === id);
+  if (!target) return;
+  target.stageId = stageId;
+  if (type === "lead") target.updatedAt = nowIso();
+  persistTenant("crm_record_moved", "Card movido no CRM");
+  renderCrm();
+}
+
+function resolveRoutingForLabels(labels, fallbackPipeline) {
+  const rules = tenant.data.crmRoutingRules || [];
+  const labelSet = new Set((labels || []).map(item => item.toLowerCase()));
+  const rule = rules.find(item => labelSet.has(String(item.label || "").toLowerCase()));
+  return {
+    pipelineId: rule?.pipelineId || fallbackPipeline?.id || "",
+    stageId: rule?.stageId || fallbackPipeline?.stages?.[0]?.id || "",
+    autoCreate: rule?.autoCreate ?? false
+  };
+}
+
+function findLeadByContact(phone, email) {
+  return tenant.data.leads.find(item => (phone && item.phone === phone) || (email && item.email?.toLowerCase() === String(email).toLowerCase()));
+}
+
+function splitTags(raw) {
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  return String(raw || "").split(/[;,]/).map(item => item.trim()).filter(Boolean);
+}
+
+function pipelineName(id) {
+  return tenant.data.pipelines.find(item => item.id === id)?.name || "Pipeline nao definido";
+}
+
+function stageName(pipelineId, stageId) {
+  return tenant.data.pipelines.find(item => item.id === pipelineId)?.stages?.find(item => item.id === stageId)?.name || "Etapa nao definida";
 }
 
 function normalizeModules(raw) {
@@ -879,8 +1372,8 @@ function closeModal() {
   root.innerHTML = "";
 }
 
-function inputField(name, label, currentValue = "", type = "text") {
-  return `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(currentValue ?? "")}" ${type !== "password" ? "required" : ""}></label>`;
+function inputField(name, label, currentValue = "", type = "text", required = true, placeholder = "") {
+  return `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(currentValue ?? "")}" ${required ? "required" : ""} placeholder="${escapeAttr(placeholder)}"></label>`;
 }
 
 function selectField(name, label, options, selected = "") {
@@ -895,6 +1388,7 @@ function actionButtons(type, id) {
 window.editRecord = (type, id) => {
   if (type === "dashboardWidgets") openWidgetModal(id);
   if (type === "deals") openDealModal(id);
+  if (type === "leads") openLeadModal(id);
   if (["categories", "indicators", "reports", "goals", "processes"].includes(type)) openManagementModal(type, id);
   if (type === "automations") openAutomationModal(id);
 };
@@ -903,6 +1397,7 @@ window.deleteRecord = (type, id) => {
   if (!confirm("Excluir este registro?")) return;
   if (type === "dashboardWidgets") tenant.data.dashboardWidgets = tenant.data.dashboardWidgets.filter(item => item.id !== id);
   if (type === "deals") activePipeline().deals = activePipeline().deals.filter(item => item.id !== id);
+  if (type === "leads") tenant.data.leads = tenant.data.leads.filter(item => item.id !== id);
   if (["categories", "indicators", "reports", "goals", "processes"].includes(type)) tenant.data.management[type] = tenant.data.management[type].filter(item => item.id !== id);
   if (type === "automations") tenant.data.automations = tenant.data.automations.filter(item => item.id !== id);
   persistTenant("record_deleted", "Registro excluido");
@@ -1019,9 +1514,12 @@ function statusLabel(status) {
     open: "Aberto",
     pending: "Pendente",
     resolved: "Resolvido",
+    confirmed: "Confirmado",
+    done: "Concluido",
+    overdue: "Atrasado",
+    cancelled: "Cancelado",
     active: "Ativo",
-    suspended: "Suspenso",
-    cancelled: "Cancelado"
+    suspended: "Suspenso"
   })[status] || status;
 }
 

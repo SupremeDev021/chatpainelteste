@@ -241,6 +241,150 @@ textarea { resize: vertical; min-height: 44px; }
   gap: 16px;
 }
 
+.dashboard-hero {
+  margin-bottom: 16px;
+}
+
+.hero-panel {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 18px;
+  padding: 22px;
+  background:
+    linear-gradient(135deg, rgba(10, 25, 47, 0.96), rgba(17, 26, 46, 0.92)),
+    radial-gradient(circle at top right, rgba(0, 210, 255, 0.14), transparent 30%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.hero-panel h2 {
+  font-size: 1.35rem;
+  margin-bottom: 10px;
+}
+
+.hero-metrics, .mini-stats, .dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.hero-metrics div, .mini-stats div, .summary-card {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hero-metrics span, .mini-stats span, .summary-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin-bottom: 6px;
+}
+
+.hero-metrics strong, .mini-stats strong, .summary-card strong {
+  font-size: 1.35rem;
+  display: block;
+}
+
+.summary-card small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.dashboard-builder {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 0 16px;
+}
+
+.builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.active-chip {
+  background: rgba(0, 210, 255, 0.12) !important;
+  border-color: rgba(0, 210, 255, 0.32) !important;
+  color: var(--accent) !important;
+}
+
+.dashboard-widget {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.dashboard-widget header,
+.deal-topline,
+.tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dashboard-widget header {
+  margin-bottom: 14px;
+}
+
+.dashboard-widget h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.widget-body .widget-list {
+  display: grid;
+  gap: 10px;
+}
+
+.list-row {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.list-row small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.progress-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.progress-label {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
 .metric-card, .data-card {
   padding: 18px;
   background: var(--surface);
@@ -323,6 +467,24 @@ textarea { resize: vertical; min-height: 44px; }
 }
 .deal-card strong { display: block; }
 .deal-card span { color: var(--muted); font-size: 0.82rem; }
+.deal-card.lead { border-color: rgba(212, 175, 55, 0.24); }
+
+.tag-row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 210, 255, 0.1);
+  border: 1px solid rgba(0, 210, 255, 0.22);
+  color: var(--accent);
+  font-size: 0.72rem;
+}
 
 .agenda-grid {
   border: 1px solid var(--border);
@@ -344,6 +506,8 @@ textarea { resize: vertical; min-height: 44px; }
 }
 .agenda-time, .agenda-day-head { color: var(--muted); font-size: 0.78rem; }
 .appointment {
+  width: 100%;
+  text-align: left;
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-xs);
   background: rgba(0, 210, 255, 0.08);
@@ -448,4 +612,5 @@ textarea { resize: vertical; min-height: 44px; }
   .split-view { grid-template-columns: 1fr; }
   .module-header { flex-direction: column; }
   .message-form { grid-template-columns: 1fr; }
+  .hero-panel, .dashboard-builder { grid-template-columns: 1fr; display: grid; }
 }

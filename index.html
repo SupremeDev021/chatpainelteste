@@ -50,16 +50,35 @@
       <section id="module-dashboard" class="module active">
         <header class="module-header">
           <div>
-            <p class="eyebrow">Operacao</p>
-            <h1>Dashboard configuravel</h1>
+            <p class="eyebrow">Centro de comando</p>
+            <h1>Home inteligente</h1>
+            <p class="muted">Visao operacional montada automaticamente com base nos modulos, agenda, CRM e atendimento da empresa.</p>
           </div>
-          <button id="add-widget-button" class="btn secondary" type="button"><span data-icon="plus"></span> Widget</button>
+          <div class="actions">
+            <button id="restore-dashboard-button" class="btn ghost" type="button"><span data-icon="refresh-cw"></span> Restaurar</button>
+            <button id="add-widget-button" class="btn secondary" type="button"><span data-icon="plus"></span> Widget</button>
+          </div>
         </header>
+        <section id="dashboard-hero" class="dashboard-hero"></section>
+        <div id="dashboard-summary" class="dashboard-summary"></div>
+        <div class="dashboard-builder">
+          <div>
+            <p class="eyebrow">Layout</p>
+            <h2>Widgets visiveis</h2>
+          </div>
+          <div class="builder-actions">
+            <button id="toggle-kpi-widget" class="btn ghost" type="button">KPI</button>
+            <button id="toggle-chart-widget" class="btn ghost" type="button">Grafico</button>
+            <button id="toggle-table-widget" class="btn ghost" type="button">Tabela</button>
+            <button id="toggle-ranking-widget" class="btn ghost" type="button">Ranking</button>
+            <button id="toggle-calendar-widget" class="btn ghost" type="button">Calendario</button>
+          </div>
+        </div>
         <div id="dashboard-widgets" class="dashboard-grid"></div>
         <div id="dashboard-empty" class="empty-state">
           <span data-icon="layout-dashboard"></span>
-          <h2>Nenhum widget configurado</h2>
-          <p>Adicione KPIs, graficos e cards conforme os dados reais da empresa estiverem conectados.</p>
+          <h2>Nenhum widget visivel</h2>
+          <p>Ative pelo menos um tipo de bloco para montar o centro de comando automaticamente.</p>
         </div>
       </section>
 
@@ -90,7 +109,10 @@
                 <h2 id="active-contact-name">Nenhuma conversa selecionada</h2>
                 <p id="active-contact-meta">Aguardando dados reais</p>
               </div>
-              <button id="resolve-conversation-button" class="icon-button" type="button" title="Resolver"><span data-icon="check-circle"></span></button>
+              <div class="actions">
+                <button id="quick-lead-button" class="btn secondary" type="button"><span data-icon="sparkles"></span> Criar lead</button>
+                <button id="resolve-conversation-button" class="icon-button" type="button" title="Resolver"><span data-icon="check-circle"></span></button>
+              </div>
             </header>
             <div id="chat-history" class="chat-history empty-state compact">Selecione uma conversa.</div>
             <form id="message-form" class="message-form">
@@ -107,17 +129,24 @@
           <div>
             <p class="eyebrow">Receita</p>
             <h1>CRM visual dinamico</h1>
+            <p class="muted">Funis mais fluidos, filtros rapidos e atualizacao por arraste entre etapas.</p>
           </div>
           <div class="actions">
             <button id="new-pipeline-button" class="btn secondary" type="button"><span data-icon="columns-3"></span> Funil</button>
             <button id="new-stage-button" class="btn secondary" type="button"><span data-icon="panel-top"></span> Etapa</button>
+            <button id="new-lead-button" class="btn secondary" type="button"><span data-icon="user-round-plus"></span> Lead</button>
             <button id="new-deal-button" class="btn primary" type="button"><span data-icon="plus"></span> Oportunidade</button>
           </div>
         </header>
         <div class="toolbar">
           <select id="pipeline-select"></select>
+          <input id="crm-search" type="search" aria-label="Buscar oportunidade ou lead" placeholder="Buscar por nome, empresa ou etiqueta">
+          <select id="crm-stage-filter">
+            <option value="all">Todas as etapas</option>
+          </select>
           <button id="edit-pipeline-button" class="btn ghost" type="button"><span data-icon="settings"></span> Configurar funil</button>
         </div>
+        <div id="crm-stats" class="dashboard-summary compact"></div>
         <div id="kanban-board" class="kanban-board"></div>
         <div id="crm-empty" class="empty-state">
           <span data-icon="git-branch"></span>
@@ -211,6 +240,11 @@
             <h2>Usuarios e RBAC</h2>
             <button id="new-user-button" class="btn secondary" type="button"><span data-icon="user-plus"></span> Usuario</button>
             <div id="users-list" class="list"></div>
+          </article>
+          <article class="panel">
+            <h2>Regras CRM e etiquetas</h2>
+            <button id="new-routing-rule-button" class="btn secondary" type="button"><span data-icon="git-pull-request-arrow"></span> Regra</button>
+            <div id="routing-rules-list" class="list"></div>
           </article>
           <article class="panel">
             <h2>Auditoria</h2>
