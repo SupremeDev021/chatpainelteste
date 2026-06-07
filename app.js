@@ -1,6 +1,8 @@
 const STORAGE_KEY = "supreme_platform_state_v2";
 const SESSION_KEY = "supreme_client_session_v2";
 const SESSION_TIMEOUT_MS = 1000 * 60 * 60 * 4;
+const SUPABASE_URL = "https://hhyvtehbsfoeuagwhklm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_S9oWEYBafLstrVI2SJQ9uA_ijH5Ph9e";
 
 const MODULES = {
   dashboard: { label: "Dashboard", icon: "layout-dashboard" },
@@ -77,14 +79,16 @@ function bootClient() {
 function loadPlatform() {
   const base = { companies: [], plans: [], modules: defaultMarketplace(), audit: [], notifications: [], version: 2 };
   try {
-    return { ...base, ...(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}) };
+    const local = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    return { ...base, ...local, companies: [] };
   } catch {
     return base;
   }
 }
 
 function savePlatform() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(platform));
+  const snapshot = { ...platform, companies: [] };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
 }
 
 function loadSession() {
@@ -110,33 +114,45 @@ function defaultMarketplace() {
   }));
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   const email = value("login-email").toLowerCase();
   const password = value("login-password");
-  const company = platform.companies.find(item => item.email.toLowerCase() === email);
+  showLoginMessage("Validando acesso...");
+  const company = await findCompanyByCredentials(email, password).catch(error => {
+    console.error(error);
+    return null;
+  });
   if (!company || company.password !== password) return showLoginMessage("Credenciais invalidas.");
   if (company.status !== "active") return showLoginMessage("Acesso bloqueado pela administracao.");
   if (company.license?.status === "expired") return showLoginMessage("Assinatura expirada. Contate a Supreme Tech.");
   const user = (company.users || []).find(item => item.email.toLowerCase() === email) || ownerUser(company);
   session = { companyId: company.id, userId: user.id, startedAt: Date.now(), lastActivityAt: Date.now() };
   saveSession();
+  tenant = ensureTenant(company);
+  platform.audit = tenant.audit || [];
+  platform.notifications = tenant.notifications || [];
   audit(company.id, "login", "Login realizado no Painel Camaleao");
-  startApp(company);
+  await persistTenant("login", "Login realizado no Painel Camaleao", false);
+  showLoginMessage("");
+  startApp(tenant);
 }
 
-function restoreSession() {
+async function restoreSession() {
   if (!session) return;
   if (Date.now() - session.lastActivityAt > SESSION_TIMEOUT_MS) {
     logout(false);
     return;
   }
-  const company = platform.companies.find(item => item.id === session.companyId);
+  const company = await findCompanyById(session.companyId).catch(() => null);
   if (company && company.status === "active" && company.license?.status !== "expired") startApp(company);
 }
 
 function startApp(company) {
   tenant = ensureTenant(company);
+  platform.audit = tenant.audit || [];
+  platform.notifications = tenant.notifications || [];
+  platform.modules = tenant.marketplace || platform.modules;
   session.lastActivityAt = Date.now();
   saveSession();
   document.getElementById("login-screen").hidden = true;
@@ -169,6 +185,9 @@ function ensureTenant(company) {
   company.users ||= [ownerUser(company)];
   company.rbac ||= ROLE_PRESETS;
   company.modules ||= ["dashboard", "settings"];
+  company.audit ||= [];
+  company.notifications ||= [];
+  company.marketplace ||= defaultMarketplace();
   return company;
 }
 
@@ -671,7 +690,11 @@ function tenantNotifications() {
 
 function renderNotificationsBadge(markRead = false) {
   if (!tenant) return;
-  if (markRead) tenantNotifications().forEach(item => { item.read = true; });
+  if (markRead) {
+    tenantNotifications().forEach(item => { item.read = true; });
+    tenant.notifications = tenantNotifications();
+    persistTenant("notifications_read", "Notificacoes marcadas como lidas", false);
+  }
   const unread = tenantNotifications().filter(item => !item.read).length;
   const counter = document.getElementById("notification-count");
   counter.hidden = unread === 0;
@@ -697,16 +720,137 @@ function modulePermissions(modules, actions) {
   return modules.reduce((acc, key) => ({ ...acc, [key]: actions.slice() }), {});
 }
 
-function persistTenant(action, description) {
-  const index = platform.companies.findIndex(item => item.id === tenant.id);
-  if (index >= 0) platform.companies[index] = tenant;
-  audit(tenant.id, action, description);
-  savePlatform();
+async function persistTenant(action, description, addAudit = true) {
+  if (!tenant) return;
+  if (addAudit) audit(tenant.id, action, description);
+  try {
+    await supabaseRequest("/rest/v1/configuracoes_robo?on_conflict=cliente_id", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=minimal",
+      body: {
+        cliente_id: Number(tenant.id),
+        bot_desativado: tenant.status === "active" ? "NAO" : "SIM",
+        dados_painel: panelDataFromTenant(),
+        atualizado_em: nowIso()
+      }
+    });
+    savePlatform();
+  } catch (error) {
+    console.error(error);
+    toast("Nao foi possivel sincronizar com o Supabase agora.", "error");
+  }
 }
 
 function audit(companyId, action, description) {
   platform.audit.unshift({ id: uid("audit"), companyId, action, description, createdAt: nowIso() });
+  if (tenant) tenant.audit = platform.audit.filter(item => item.companyId === tenant.id);
   savePlatform();
+}
+
+async function findCompanyByCredentials(email, password) {
+  const rows = await supabaseRequest(`/rest/v1/clientes?select=*&email=eq.${encodeURIComponent(email)}&senha=eq.${encodeURIComponent(password)}&limit=1`);
+  const row = rows?.[0];
+  return row ? hydrateCompany(row) : null;
+}
+
+async function findCompanyById(id) {
+  const rows = await supabaseRequest(`/rest/v1/clientes?select=*&id=eq.${encodeURIComponent(id)}&limit=1`);
+  const row = rows?.[0];
+  return row ? hydrateCompany(row) : null;
+}
+
+async function hydrateCompany(row) {
+  const configs = await supabaseRequest(`/rest/v1/configuracoes_robo?select=*&cliente_id=eq.${encodeURIComponent(row.id)}&limit=1`);
+  return companyFromSupabase(row, configs?.[0]?.dados_painel || {});
+}
+
+function companyFromSupabase(row, panel = {}) {
+  const status = fromSupabaseStatus(row.status);
+  const company = {
+    id: String(row.id),
+    name: row.nome_empresa || "Empresa",
+    email: row.email || "",
+    password: row.senha || "",
+    responsible: panel.responsible || "",
+    document: panel.document || "",
+    planId: panel.planId || row.plano || "",
+    planName: panel.planName || row.plano || "Sem plano",
+    monthly: Number(row.valor_mensalidade || 0),
+    setup: Number(row.valor_implantacao || 0),
+    status,
+    modules: normalizeModules(panel.modules || row.segmento),
+    license: panel.license || { status: status === "active" ? "active" : "suspended", dueDate: null },
+    data: panel.data || emptyCompanyData(),
+    users: panel.users || [],
+    rbac: panel.rbac || ROLE_PRESETS,
+    brand: panel.brand || {},
+    audit: panel.audit || [],
+    notifications: panel.notifications || [],
+    marketplace: panel.marketplace || defaultMarketplace(),
+    createdAt: row.criado_em || panel.createdAt || nowIso()
+  };
+  company.users = company.users.length ? company.users : [ownerUser(company)];
+  return company;
+}
+
+function panelDataFromTenant() {
+  return {
+    responsible: tenant.responsible || "",
+    document: tenant.document || "",
+    planId: tenant.planId || "",
+    planName: tenant.planName || tenant.planId || "",
+    modules: tenant.modules || [],
+    license: tenant.license || { status: "active", dueDate: null },
+    users: tenant.users || [ownerUser(tenant)],
+    rbac: tenant.rbac || ROLE_PRESETS,
+    data: tenant.data || emptyCompanyData(),
+    brand: tenant.brand || {},
+    audit: tenant.audit || [],
+    notifications: tenant.notifications || [],
+    marketplace: tenant.marketplace || platform.modules,
+    updatedAt: nowIso()
+  };
+}
+
+function emptyCompanyData() {
+  return {
+    conversations: [],
+    pipelines: [],
+    appointments: [],
+    management: { categories: [], indicators: [], reports: [], goals: [], processes: [] },
+    automations: [],
+    dashboardWidgets: []
+  };
+}
+
+function normalizeModules(raw) {
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === "string") return raw.split(/[,\s;|]+/).map(item => item.trim()).filter(Boolean);
+  return ["dashboard", "settings"];
+}
+
+function fromSupabaseStatus(status) {
+  return ({ ativo: "active", suspenso: "suspended", cancelado: "cancelled", active: "active", suspended: "suspended", cancelled: "cancelled" })[status] || "active";
+}
+
+async function supabaseRequest(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    method: options.method || "GET",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.prefer ? { Prefer: options.prefer } : {})
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Erro Supabase ${response.status}`);
+  }
+  if (response.status === 204) return null;
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 function openFormModal(title, fields, onSubmit, extraActions = []) {
