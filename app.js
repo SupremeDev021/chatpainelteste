@@ -124,14 +124,15 @@ async function handleLogin(event) {
   const email = value("login-email").toLowerCase();
   const password = value("login-password");
   showLoginMessage("Validando acesso...");
-  const company = await findCompanyByCredentials(email, password).catch(error => {
+  const identity = await findLoginIdentity(email).catch(error => {
     console.error(error);
     return null;
   });
-  if (!company || company.password !== password) return showLoginMessage("Credenciais invalidas.");
+  if (!identity?.company || !identity?.user || String(identity.user.password || "") !== password) return showLoginMessage("Credenciais invalidas.");
+  const company = identity.company;
   if (company.status !== "active") return showLoginMessage("Acesso bloqueado pela administracao.");
   if (company.license?.status === "expired") return showLoginMessage("Assinatura expirada. Contate a Supreme Tech.");
-  const user = (company.users || []).find(item => item.email.toLowerCase() === email) || ownerUser(company);
+  const user = identity.user;
   session = { companyId: company.id, userId: user.id, startedAt: Date.now(), lastActivityAt: Date.now() };
   saveSession();
   tenant = ensureTenant(company);
@@ -1123,6 +1124,27 @@ async function findCompanyByCredentials(email, password) {
   return row ? hydrateCompany(row) : null;
 }
 
+async function findLoginIdentity(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const ownerRows = await supabaseRequest(`/rest/v1/clientes?select=*&email=eq.${encodeURIComponent(normalizedEmail)}&limit=1`);
+  if (ownerRows?.[0]) {
+    const company = await hydrateCompany(ownerRows[0]);
+    const owner = (company.users || []).find(user => normalizeEmail(user.email) === normalizedEmail) || ownerUser(company);
+    return { company, user: owner };
+  }
+
+  const configs = await supabaseRequest("/rest/v1/configuracoes_robo?select=cliente_id,dados_painel");
+  const match = (configs || []).find(config => {
+    const users = Array.isArray(config.dados_painel?.users) ? config.dados_painel.users : [];
+    return users.some(user => normalizeEmail(user.email) === normalizedEmail);
+  });
+  if (!match?.cliente_id) return null;
+
+  const company = await findCompanyById(match.cliente_id);
+  const user = (company?.users || []).find(item => normalizeEmail(item.email) === normalizedEmail);
+  return company && user ? { company, user } : null;
+}
+
 async function findCompanyById(id) {
   const rows = await supabaseRequest(`/rest/v1/clientes?select=*&id=eq.${encodeURIComponent(id)}&limit=1`);
   const row = rows?.[0];
@@ -1475,6 +1497,10 @@ function on(id, event, handler) {
 
 function value(id) {
   return document.getElementById(id)?.value.trim() || "";
+}
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
 }
 
 function setText(id, text) {
