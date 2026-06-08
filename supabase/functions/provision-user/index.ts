@@ -16,9 +16,13 @@ serve(async request => {
 
   try {
     assertEnv();
+    const payload = await request.json();
+    if (payload.mode === "bootstrap_owner") {
+      return json(await bootstrapOwner(payload));
+    }
+
     const authHeader = request.headers.get("Authorization") || "";
     const caller = await getCaller(authHeader);
-    const payload = await request.json();
     const companyId = Number(payload.companyId);
     if (!companyId || !payload.email || !payload.name || !payload.role) {
       return json({ error: "Campos obrigatorios ausentes" }, 400);
@@ -49,6 +53,51 @@ serve(async request => {
     return json({ error: error.message || "Erro ao provisionar usuario" }, 500);
   }
 });
+
+async function bootstrapOwner(payload: any) {
+  const companyId = Number(payload.companyId);
+  const email = String(payload.email || "").trim().toLowerCase();
+  const password = String(payload.password || "");
+  const name = String(payload.name || "Proprietario");
+  if (!companyId || !email || !password) throw new Error("Campos obrigatorios ausentes para bootstrap.");
+
+  const companies = await rest(`/rest/v1/clientes?select=id,email,senha,nome_empresa&id=eq.${companyId}&email=eq.${encodeURIComponent(email)}&senha=eq.${encodeURIComponent(password)}&limit=1`);
+  const company = companies?.[0];
+  if (!company) throw new Error("Credenciais da empresa invalidas para bootstrap.");
+
+  const existingProfile = await rest(`/rest/v1/app_user_profiles?select=*&company_id=eq.${companyId}&email=eq.${encodeURIComponent(email)}&limit=1`);
+  if (existingProfile?.[0]?.auth_user_id) {
+    return {
+      authUserId: existingProfile[0].auth_user_id,
+      profileId: existingProfile[0].id,
+      email: existingProfile[0].email,
+      role: existingProfile[0].role
+    };
+  }
+
+  const authUser = await upsertAuthUser({
+    email,
+    password,
+    name,
+    role: "proprietario"
+  });
+  const profile = await upsertProfile({
+    auth_user_id: authUser.id,
+    company_id: companyId,
+    full_name: name,
+    email,
+    role: "proprietario",
+    permissions: allPermissions(),
+    active: true
+  });
+
+  return {
+    authUserId: authUser.id,
+    profileId: profile.id,
+    email: profile.email,
+    role: profile.role
+  };
+}
 
 function assertEnv() {
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
@@ -103,6 +152,19 @@ async function upsertProfile(profile: Record<string, unknown>) {
     body: profile
   });
   return rows?.[0];
+}
+
+function allPermissions() {
+  return {
+    dashboard: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    inbox: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    crm: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    agenda: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    management: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    automations: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    marketplace: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"],
+    settings: ["view", "create", "edit", "delete", "export", "manage_users", "configure_integrations"]
+  };
 }
 
 async function rest(path: string, options: { method?: string; body?: unknown; prefer?: string } = {}) {

@@ -135,6 +135,13 @@ async function handleLogin(event) {
   if (company.license?.status === "expired") return showLoginMessage("Assinatura expirada. Contate a Supreme Tech.");
   const user = identity.user;
   session = { companyId: company.id, userId: user.id, auth: identity.auth || null, startedAt: Date.now(), lastActivityAt: Date.now() };
+  if (!session.auth && user.role === "proprietario") {
+    session.auth = await bootstrapOwnerAuthSession(company, user, password).catch(error => {
+      console.error(error);
+      toast("Login legado mantido. A migracao do proprietario para Supabase Auth nao concluiu nesta tentativa.", "error");
+      return null;
+    });
+  }
   saveSession();
   tenant = ensureTenant(company);
   platform.audit = tenant.audit || [];
@@ -1185,6 +1192,27 @@ async function findAuthLoginIdentity(email, password) {
   return { company, user, auth: authSession };
 }
 
+async function bootstrapOwnerAuthSession(company, user, password) {
+  const result = await supabaseFunctionRequest("provision-user", {
+    body: {
+      mode: "bootstrap_owner",
+      companyId: company.id,
+      email: normalizeEmail(user.email),
+      password,
+      name: user.name || company.name || "Proprietario"
+    }
+  });
+  if (!result?.authUserId) return null;
+
+  const authPayload = await supabaseAuthSignIn(normalizeEmail(user.email), password);
+  const authSession = normalizeAuthSession(authPayload);
+  if (!authSession) return null;
+
+  user.authUserId = result.authUserId;
+  user.password = "";
+  return authSession;
+}
+
 async function findAuthProfile(authUserId, accessToken) {
   const rows = await supabaseRequest(`/rest/v1/${AUTH_PROFILE_TABLE}?select=*&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, { authToken: accessToken });
   return rows?.[0] || null;
@@ -1543,7 +1571,7 @@ async function supabaseFunctionRequest(name, options = {}) {
     method: "POST",
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${options.authToken}`,
+      ...(options.authToken ? { Authorization: `Bearer ${options.authToken}` } : {}),
       "Content-Type": "application/json"
     },
     body: JSON.stringify(options.body || {})
