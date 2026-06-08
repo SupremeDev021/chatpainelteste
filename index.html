@@ -6,7 +6,7 @@
   <meta name="description" content="Painel Camaleao Supreme Tech para atendimento, CRM, agenda, gestao e automacoes.">
   <meta name="theme-color" content="#070b16">
   <title>Painel Camaleao | Supreme Tech</title>
-  <link rel="stylesheet" href="crm.css?v=20260608-4">
+  <link rel="stylesheet" href="crm.css?v=20260608-5">
 </head>
 <body>
   <section id="login-screen" class="auth-screen">
@@ -88,7 +88,10 @@
             <p class="eyebrow">Atendimento</p>
             <h1>Central omnichannel</h1>
           </div>
-          <button id="new-conversation-button" class="btn secondary" type="button"><span data-icon="message-square-plus"></span> Conversa</button>
+          <div class="actions">
+            <button id="sync-conversations-button" class="btn secondary" type="button"><span data-icon="refresh-cw"></span> Sincronizar</button>
+            <button id="new-conversation-button" class="btn secondary" type="button"><span data-icon="message-square-plus"></span> Conversa</button>
+          </div>
         </header>
         <div class="split-view">
           <aside class="panel list-panel">
@@ -282,6 +285,6 @@
 
   <div id="modal-root" class="modal-root" hidden></div>
   <div id="toast-root" class="toast-root" aria-live="polite"></div>
-  <script src="app.js?v=20260608-4"></script>
+  <script src="app.js?v=20260608-5"></script>
 </body>
 </html>

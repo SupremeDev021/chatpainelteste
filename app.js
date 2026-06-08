@@ -276,6 +276,7 @@ function bindModuleEvents() {
   on("toggle-table-widget", "click", () => toggleDashboardKind("table"));
   on("toggle-ranking-widget", "click", () => toggleDashboardKind("ranking"));
   on("toggle-calendar-widget", "click", () => toggleDashboardKind("calendar"));
+  on("sync-conversations-button", "click", syncChatwootConversations);
   on("new-conversation-button", "click", () => openConversationModal());
   on("quick-lead-button", "click", createLeadFromActiveConversation);
   on("conversation-search", "input", renderInbox);
@@ -582,20 +583,96 @@ function renderConversationDetails(conversation, linkedLead = null) {
   if (tags) tags.innerHTML = (conversation?.labels || linkedLead?.tags || []).map(label => `<span class="tag">${escapeHtml(label)}</span>`).join("");
 }
 
-function sendMessage(event) {
+async function sendMessage(event) {
   event.preventDefault();
   const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
   const text = value("message-input");
   if (!conversation || !text) return;
+  const isInternalNote = document.getElementById("internal-note-toggle").checked;
+  if (conversation.provider === "chatwoot" && !isInternalNote) {
+    await sendChatwootMessage(conversation, text);
+    return;
+  }
   conversation.messages.push({
     id: uid("msg"),
-    type: document.getElementById("internal-note-toggle").checked ? "note" : "out",
+    type: isInternalNote ? "note" : "out",
     text,
     createdAt: nowIso()
   });
   document.getElementById("message-input").value = "";
   persistTenant("message_created", "Mensagem registrada");
   renderInbox();
+}
+
+async function syncChatwootConversations() {
+  const button = document.getElementById("sync-conversations-button");
+  if (button) button.disabled = true;
+  try {
+    const result = await integrationsRequest("chatwoot.conversations", { status: "open", page: 1 });
+    const synced = (result.conversations || []).map(normalizeExternalConversation);
+    synced.forEach(item => upsertConversation(item));
+    tenant.integrations ||= {};
+    tenant.integrations.lastChatwootSyncAt = result.syncedAt || nowIso();
+    await persistTenant("chatwoot_synced", `${synced.length} conversas sincronizadas do Chatwoot`);
+    activeConversationId ||= synced[0]?.id || null;
+    renderInbox();
+    toast(`${synced.length} conversas sincronizadas do Chatwoot.`, "success");
+  } catch (error) {
+    console.error(error);
+    toast("Nao foi possivel sincronizar o Chatwoot agora.", "error");
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function sendChatwootMessage(conversation, text) {
+  const result = await integrationsRequest("chatwoot.sendMessage", {
+    conversationId: conversation.externalId,
+    content: text
+  });
+  const message = normalizeExternalMessage(result.message) || {
+    id: uid("msg"),
+    type: "out",
+    text,
+    createdAt: nowIso()
+  };
+  conversation.messages.push(message);
+  conversation.lastMessage = text;
+  conversation.updatedAt = nowIso();
+  document.getElementById("message-input").value = "";
+  await persistTenant("chatwoot_message_sent", "Mensagem enviada pelo Chatwoot");
+  renderInbox();
+  toast("Mensagem enviada pelo Chatwoot.", "success");
+}
+
+function upsertConversation(item) {
+  const index = tenant.data.conversations.findIndex(current => current.id === item.id || (item.externalId && current.externalId === item.externalId && current.provider === item.provider));
+  if (index >= 0) {
+    tenant.data.conversations[index] = { ...tenant.data.conversations[index], ...item };
+  } else {
+    tenant.data.conversations.unshift(item);
+    maybeAutoCreateLeadFromConversation(item);
+  }
+}
+
+function normalizeExternalConversation(item) {
+  return {
+    ...item,
+    messages: (item.messages || []).map(normalizeExternalMessage).filter(Boolean),
+    createdAt: item.createdAt || nowIso(),
+    updatedAt: item.updatedAt || item.createdAt || nowIso()
+  };
+}
+
+function normalizeExternalMessage(message) {
+  if (!message) return null;
+  return {
+    id: message.id || uid("msg"),
+    externalId: message.externalId || "",
+    type: message.from === "agent" ? "out" : message.from === "note" ? "note" : "in",
+    text: message.content || message.text || "",
+    createdAt: message.createdAt || nowIso()
+  };
 }
 
 function resolveConversation() {
@@ -1580,6 +1657,22 @@ async function supabaseFunctionRequest(name, options = {}) {
   const payload = text ? JSON.parse(text) : null;
   if (!response.ok) throw new Error(payload?.error || `Erro Function ${response.status}`);
   return payload;
+}
+
+async function integrationsRequest(action, payload = {}) {
+  if (!session?.auth?.accessToken) {
+    throw new Error("Sessao Supabase Auth necessaria para usar integracoes.");
+  }
+  return supabaseFunctionRequest("integrations-gateway", {
+    authToken: session.auth.accessToken,
+    body: {
+      action,
+      payload: {
+        ...payload,
+        companyId: tenant?.id || null
+      }
+    }
+  });
 }
 
 function openFormModal(title, fields, onSubmit, extraActions = []) {
