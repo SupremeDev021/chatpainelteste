@@ -3,6 +3,7 @@ const SESSION_KEY = "supreme_client_session_v2";
 const SESSION_TIMEOUT_MS = 1000 * 60 * 60 * 4;
 const SUPABASE_URL = "https://hhyvtehbsfoeuagwhklm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_S9oWEYBafLstrVI2SJQ9uA_ijH5Ph9e";
+const AUTH_PROFILE_TABLE = "app_user_profiles";
 
 const MODULES = {
   dashboard: { label: "Dashboard", icon: "layout-dashboard" },
@@ -124,16 +125,16 @@ async function handleLogin(event) {
   const email = value("login-email").toLowerCase();
   const password = value("login-password");
   showLoginMessage("Validando acesso...");
-  const identity = await findLoginIdentity(email).catch(error => {
+  const identity = await findLoginIdentity(email, password).catch(error => {
     console.error(error);
     return null;
   });
-  if (!identity?.company || !identity?.user || String(identity.user.password || "") !== password) return showLoginMessage("Credenciais invalidas.");
+  if (!identity?.company || !identity?.user || (!identity.auth && String(identity.user.password || "") !== password)) return showLoginMessage("Credenciais invalidas.");
   const company = identity.company;
   if (company.status !== "active") return showLoginMessage("Acesso bloqueado pela administracao.");
   if (company.license?.status === "expired") return showLoginMessage("Assinatura expirada. Contate a Supreme Tech.");
   const user = identity.user;
-  session = { companyId: company.id, userId: user.id, startedAt: Date.now(), lastActivityAt: Date.now() };
+  session = { companyId: company.id, userId: user.id, auth: identity.auth || null, startedAt: Date.now(), lastActivityAt: Date.now() };
   saveSession();
   tenant = ensureTenant(company);
   platform.audit = tenant.audit || [];
@@ -173,6 +174,7 @@ function startApp(company) {
 
 function logout(record = true) {
   if (record && tenant) audit(tenant.id, "logout", "Logout realizado no Painel Camaleao");
+  if (session?.auth?.accessToken) supabaseAuthSignOut(session.auth.accessToken).catch(console.error);
   session = null;
   tenant = null;
   localStorage.removeItem(SESSION_KEY);
@@ -994,10 +996,28 @@ function openUserModal(id) {
   openFormModal(current ? "Editar usuario" : "Novo usuario", [
     inputField("name", "Nome", current?.name),
     inputField("email", "E-mail", current?.email, "email"),
-    inputField("password", "Senha", current?.password, "password"),
+    inputField("password", current ? "Nova senha (opcional)" : "Senha inicial", "", "password", !current, current ? "Preencha apenas se quiser alterar" : ""),
     selectField("role", "Perfil", Object.keys(ROLE_PRESETS).map(role => ({ value: role, label: roleLabel(role) })), current?.role || "atendente")
-  ], values => {
-    upsert(tenant.users, { id, ...values, permissions: ROLE_PRESETS[values.role] });
+  ], async values => {
+    const currentPassword = current?.password || "";
+    const userRecord = {
+      id,
+      authUserId: current?.authUserId || "",
+      name: values.name,
+      email: normalizeEmail(values.email),
+      role: values.role,
+      permissions: ROLE_PRESETS[values.role],
+      password: currentPassword
+    };
+    const authResult = await provisionAuthUser(userRecord, values.password);
+    if (authResult?.authUserId) {
+      userRecord.id = current?.id || authResult.profileId || authResult.authUserId;
+      userRecord.authUserId = authResult.authUserId;
+      userRecord.password = "";
+    } else if (values.password) {
+      userRecord.password = values.password;
+    }
+    upsert(tenant.users, userRecord);
     persistTenant("user_saved", "Usuario salvo");
     renderUsers();
   });
@@ -1124,8 +1144,14 @@ async function findCompanyByCredentials(email, password) {
   return row ? hydrateCompany(row) : null;
 }
 
-async function findLoginIdentity(email) {
+async function findLoginIdentity(email, password) {
   const normalizedEmail = normalizeEmail(email);
+  const authIdentity = await findAuthLoginIdentity(normalizedEmail, password).catch(error => {
+    console.warn("Supabase Auth indisponivel para este login, usando fallback legado.", error);
+    return null;
+  });
+  if (authIdentity) return authIdentity;
+
   const ownerRows = await supabaseRequest(`/rest/v1/clientes?select=*&email=eq.${encodeURIComponent(normalizedEmail)}&limit=1`);
   if (ownerRows?.[0]) {
     const company = await hydrateCompany(ownerRows[0]);
@@ -1143,6 +1169,42 @@ async function findLoginIdentity(email) {
   const company = await findCompanyById(match.cliente_id);
   const user = (company?.users || []).find(item => normalizeEmail(item.email) === normalizedEmail);
   return company && user ? { company, user } : null;
+}
+
+async function findAuthLoginIdentity(email, password) {
+  const auth = await supabaseAuthSignIn(email, password);
+  const authUser = auth?.user;
+  const authSession = normalizeAuthSession(auth);
+  if (!authUser?.id || !authSession?.accessToken) return null;
+
+  const profile = await findAuthProfile(authUser.id, authSession.accessToken);
+  if (!profile?.company_id || profile.active === false) return null;
+  const company = await findCompanyById(profile.company_id);
+  if (!company) return null;
+  const user = userFromAuthProfile(company, profile, authUser);
+  return { company, user, auth: authSession };
+}
+
+async function findAuthProfile(authUserId, accessToken) {
+  const rows = await supabaseRequest(`/rest/v1/${AUTH_PROFILE_TABLE}?select=*&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, { authToken: accessToken });
+  return rows?.[0] || null;
+}
+
+function userFromAuthProfile(company, profile, authUser) {
+  const email = normalizeEmail(profile.email || authUser.email);
+  const current = (company.users || []).find(item => item.authUserId === authUser.id || normalizeEmail(item.email) === email);
+  const role = profile.role || current?.role || "atendente";
+  const user = {
+    id: current?.id || profile.id || authUser.id,
+    authUserId: authUser.id,
+    name: profile.full_name || current?.name || email,
+    email,
+    password: "",
+    role,
+    permissions: profile.permissions || current?.permissions || ROLE_PRESETS[role] || {}
+  };
+  if (!current) company.users = [...(company.users || []), user];
+  return user;
 }
 
 async function findCompanyById(id) {
@@ -1184,7 +1246,7 @@ function companyFromSupabase(row, panel = {}) {
     integrations: panel.integrations || {},
     createdAt: row.criado_em || panel.createdAt || nowIso()
   };
-  company.users = company.users.length ? company.users : [ownerUser(company)];
+  company.users = company.users.length ? company.users.map(user => ({ ...user, permissions: user.permissions || ROLE_PRESETS[user.role] || {} })) : [ownerUser(company)];
   return company;
 }
 
@@ -1196,7 +1258,7 @@ function panelDataFromTenant() {
     planName: tenant.planName || tenant.planId || "",
     modules: tenant.modules || [],
     license: tenant.license || { status: "active", dueDate: null },
-    users: tenant.users || [ownerUser(tenant)],
+    users: sanitizeUsersForStorage(tenant.users || [ownerUser(tenant)]),
     rbac: tenant.rbac || ROLE_PRESETS,
     data: tenant.data || emptyCompanyData(),
     brand: tenant.brand || {},
@@ -1405,7 +1467,7 @@ async function supabaseRequest(path, options = {}) {
     method: options.method || "GET",
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Authorization: `Bearer ${options.authToken || SUPABASE_KEY}`,
       "Content-Type": "application/json",
       ...(options.prefer ? { Prefer: options.prefer } : {})
     },
@@ -1420,15 +1482,96 @@ async function supabaseRequest(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+async function supabaseAuthRequest(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    method: options.method || "GET",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${options.authToken || SUPABASE_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(payload?.msg || payload?.message || payload?.error_description || `Erro Auth ${response.status}`);
+  return payload;
+}
+
+async function supabaseAuthSignIn(email, password) {
+  return supabaseAuthRequest("/auth/v1/token?grant_type=password", {
+    method: "POST",
+    body: { email, password }
+  });
+}
+
+async function supabaseAuthSignOut(accessToken) {
+  return supabaseAuthRequest("/auth/v1/logout", {
+    method: "POST",
+    authToken: accessToken
+  });
+}
+
+async function provisionAuthUser(user, password) {
+  if (!session?.auth?.accessToken) return null;
+  if (!password && !user.authUserId) return null;
+  try {
+    const result = await supabaseFunctionRequest("provision-user", {
+      authToken: session.auth.accessToken,
+      body: {
+        companyId: tenant.id,
+        authUserId: user.authUserId || null,
+        email: user.email,
+        password: password || null,
+        name: user.name,
+        role: user.role,
+        permissions: user.permissions,
+        active: true
+      }
+    });
+    toast("Usuario sincronizado com Supabase Auth.", "success");
+    return result;
+  } catch (error) {
+    console.error(error);
+    toast("Usuario salvo no modo legado. Publique a Edge Function provision-user para ativar Supabase Auth.", "error");
+    return null;
+  }
+}
+
+async function supabaseFunctionRequest(name, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${options.authToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(options.body || {})
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(payload?.error || `Erro Function ${response.status}`);
+  return payload;
+}
+
 function openFormModal(title, fields, onSubmit, extraActions = []) {
   const formId = uid("form");
   openModal(title, `<form id="${formId}" class="stack">${fields.join("")}<footer>${extraActions.map((action, index) => `<button class="btn ${action.className || "ghost"}" type="button" data-extra-action="${index}">${action.label}</button>`).join("")}<button class="btn ghost" type="button" data-close-modal>Cancelar</button><button class="btn primary" type="submit">${icon("save")} Salvar</button></footer></form>`);
   document.querySelectorAll("[data-extra-action]").forEach(button => button.addEventListener("click", () => extraActions[Number(button.dataset.extraAction)].action()));
-  document.getElementById(formId).addEventListener("submit", event => {
+  document.getElementById(formId).addEventListener("submit", async event => {
     event.preventDefault();
+    const submitButton = event.target.querySelector("button[type='submit']");
+    if (submitButton) submitButton.disabled = true;
     const data = Object.fromEntries(new FormData(event.target).entries());
-    onSubmit(data);
-    closeModal();
+    try {
+      await onSubmit(data);
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      toast("Nao foi possivel salvar. Revise os dados e tente novamente.", "error");
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
   });
 }
 
@@ -1501,6 +1644,21 @@ function value(id) {
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
+}
+
+function normalizeAuthSession(payload) {
+  const sessionPayload = payload?.session || payload;
+  if (!sessionPayload?.access_token) return null;
+  return {
+    accessToken: sessionPayload.access_token,
+    refreshToken: sessionPayload.refresh_token || "",
+    expiresAt: sessionPayload.expires_at || null,
+    tokenType: sessionPayload.token_type || "bearer"
+  };
+}
+
+function sanitizeUsersForStorage(users) {
+  return users.map(user => user.authUserId ? { ...user, password: "" } : user);
 }
 
 function setText(id, text) {
