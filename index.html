@@ -6,7 +6,7 @@
   <meta name="description" content="Painel Camaleao Supreme Tech para atendimento, CRM, agenda, gestao e automacoes.">
   <meta name="theme-color" content="#070b16">
   <title>Painel Camaleao | Supreme Tech</title>
-  <link rel="stylesheet" href="crm.css?v=20260607-4">
+  <link rel="stylesheet" href="crm.css?v=20260608-1">
 </head>
 <body>
   <section id="login-screen" class="auth-screen">
@@ -121,6 +121,25 @@
               <button class="btn primary" type="submit"><span data-icon="send"></span></button>
             </form>
           </section>
+          <aside class="crm-details-column">
+            <section class="crm-section profile-card">
+              <div id="details-avatar" class="contact-avatar-lg">ST</div>
+              <h3 id="details-name">Contato</h3>
+              <p id="details-company">Empresa</p>
+              <div id="details-tags" class="tag-row"></div>
+            </section>
+            <section class="crm-section">
+              <h3>Dados inteligentes</h3>
+              <div class="info-row"><span>Canal</span><strong id="details-channel">-</strong></div>
+              <div class="info-row"><span>Telefone</span><strong id="details-phone">-</strong></div>
+              <div class="info-row"><span>E-mail</span><strong id="details-email">-</strong></div>
+              <div class="info-row"><span>Status</span><strong id="details-status">-</strong></div>
+            </section>
+            <section class="crm-section">
+              <h3>Lead vinculado</h3>
+              <p id="details-lead" class="muted">Nenhum lead associado.</p>
+            </section>
+          </aside>
         </div>
       </section>
 
@@ -228,7 +247,9 @@
             <h2>Identidade visual</h2>
             <form id="brand-form" class="stack">
               <label class="field">Nome exibido<input id="brand-name" type="text"></label>
+              <label class="field">Upload da logomarca<input id="brand-logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
               <label class="field">URL da logomarca<input id="brand-logo-url" type="url"></label>
+              <label class="field">Cor de fundo<input id="brand-bg" type="color" value="#070b16"></label>
               <div class="form-row">
                 <label class="field">Cor primaria<input id="brand-primary" type="color" value="#d4af37"></label>
                 <label class="field">Cor de acao<input id="brand-accent" type="color" value="#00d2ff"></label>
@@ -261,6 +282,6 @@
 
   <div id="modal-root" class="modal-root" hidden></div>
   <div id="toast-root" class="toast-root" aria-live="polite"></div>
-  <script src="app.js?v=20260607-4"></script>
+  <script src="app.js?v=20260608-1"></script>
 </body>
 </html>

@@ -216,7 +216,7 @@ function renderMenu() {
   const menu = document.getElementById("module-menu");
   const modules = allowedModules();
   menu.innerHTML = modules.map(key => `
-    <button type="button" data-module="${key}" class="${key === activeModule ? "active" : ""}">
+    <button type="button" data-module="${key}" class="${key === activeModule ? "active" : ""}" title="${escapeAttr(MODULES[key].label)}" aria-label="${escapeAttr(MODULES[key].label)}">
       ${icon(MODULES[key].icon)}<span>${MODULES[key].label}</span>
     </button>
   `).join("");
@@ -293,6 +293,7 @@ function bindModuleEvents() {
   on("new-process-button", "click", () => openManagementModal("processes"));
   on("new-automation-button", "click", () => openAutomationModal());
   on("brand-form", "submit", saveBrand);
+  on("brand-logo-file", "change", handleBrandLogoUpload);
   on("new-user-button", "click", () => openUserModal());
   on("new-routing-rule-button", "click", () => openRoutingRuleModal());
 }
@@ -495,13 +496,17 @@ function renderInbox() {
     return matchesFilter && searchable.includes(search);
   });
   list.innerHTML = conversations.length ? conversations.map(item => `
-    <article class="list-item">
-      <strong>${escapeHtml(item.contactName)}</strong>
-      <p class="muted">${escapeHtml(item.channel || "Canal nao informado")} ${item.phone ? `- ${escapeHtml(item.phone)}` : ""}</p>
-      <div class="tag-row">${(item.labels || []).map(label => `<span class="tag">${escapeHtml(label)}</span>`).join("")}</div>
-      <span class="status-pill ${item.status}">${statusLabel(item.status)}</span>
-      <button class="btn ghost" type="button" data-open-conversation="${item.id}">Abrir</button>
-    </article>
+    <button class="chat-item ${item.id === activeConversationId ? "active" : ""}" type="button" data-open-conversation="${item.id}">
+      <div class="avatar">${escapeHtml(initials(item.contactName || item.phone || "ST"))}</div>
+      <div class="chat-preview">
+        <h4><span>${escapeHtml(item.contactName || "Contato")}</span><span class="chat-time">${formatDate(item.createdAt || nowIso())}</span></h4>
+        <p>${escapeHtml(item.channel || "Canal nao informado")} ${item.phone ? `- ${escapeHtml(item.phone)}` : ""}</p>
+        <div class="chat-meta-line">
+          <span class="status-pill ${item.status}">${statusLabel(item.status)}</span>
+          ${(item.labels || []).slice(0, 2).map(label => `<span class="tag">${escapeHtml(label)}</span>`).join("")}
+        </div>
+      </div>
+    </button>
   `).join("") : "<div class='empty-state compact'>Nenhuma conversa registrada.</div>";
   list.querySelectorAll("[data-open-conversation]").forEach(btn => btn.addEventListener("click", () => selectConversation(btn.dataset.openConversation)));
   renderConversation();
@@ -536,6 +541,7 @@ function renderConversation() {
     setText("active-contact-name", "Nenhuma conversa selecionada");
     setText("active-contact-meta", "Aguardando dados reais");
     document.getElementById("chat-history").innerHTML = "Selecione uma conversa.";
+    renderConversationDetails(null);
     return;
   }
   setText("active-contact-name", conversation.contactName);
@@ -549,7 +555,21 @@ function renderConversation() {
   `).join("") : "<div class='empty-state compact'>Nenhuma mensagem registrada.</div>";
   const button = document.getElementById("quick-lead-button");
   if (button) button.innerHTML = `${icon("sparkles")} ${linkedLead ? "Abrir lead" : "Criar lead"}`;
+  renderConversationDetails(conversation, linkedLead);
   renderIcons();
+}
+
+function renderConversationDetails(conversation, linkedLead = null) {
+  setText("details-avatar", conversation ? initials(conversation.contactName || conversation.phone || "ST") : "ST");
+  setText("details-name", conversation?.contactName || "Contato");
+  setText("details-company", linkedLead?.company || linkedLead?.name || "Empresa");
+  setText("details-channel", conversation?.channel || "-");
+  setText("details-phone", conversation?.phone || "-");
+  setText("details-email", conversation?.email || linkedLead?.email || "-");
+  setText("details-status", conversation ? statusLabel(conversation.status) : "-");
+  setText("details-lead", linkedLead ? `${linkedLead.name} - ${pipelineName(linkedLead.pipelineId)} / ${stageName(linkedLead.pipelineId, linkedLead.stageId)}` : "Nenhum lead associado.");
+  const tags = document.getElementById("details-tags");
+  if (tags) tags.innerHTML = (conversation?.labels || linkedLead?.tags || []).map(label => `<span class="tag">${escapeHtml(label)}</span>`).join("");
 }
 
 function sendMessage(event) {
@@ -897,6 +917,7 @@ function renderMarketplace() {
 function renderSettings() {
   document.getElementById("brand-name").value = tenant.brand?.name || tenant.name || "";
   document.getElementById("brand-logo-url").value = tenant.brand?.logoUrl || "";
+  document.getElementById("brand-bg").value = tenant.brand?.bg || "#070b16";
   document.getElementById("brand-primary").value = tenant.brand?.primary || "#d4af37";
   document.getElementById("brand-accent").value = tenant.brand?.accent || "#00d2ff";
   renderUsers();
@@ -909,19 +930,48 @@ function saveBrand(event) {
   event.preventDefault();
   tenant.brand = {
     name: value("brand-name"),
-    logoUrl: value("brand-logo-url"),
+    logoUrl: tenant.brand?.pendingLogoDataUrl || value("brand-logo-url"),
+    bg: value("brand-bg") || "#070b16",
     primary: value("brand-primary"),
     accent: value("brand-accent")
   };
+  delete tenant.brand.pendingLogoDataUrl;
   persistTenant("brand_updated", "Identidade visual atualizada");
   renderTenantLogo();
   toast("Identidade salva.", "success");
 }
 
+function handleBrandLogoUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const allowed = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+  if (!allowed.includes(file.type)) {
+    event.target.value = "";
+    return toast("Use PNG, JPG, WEBP ou SVG para a logomarca.", "error");
+  }
+  if (file.size > 1024 * 1024) {
+    event.target.value = "";
+    return toast("A logomarca deve ter no maximo 1MB.", "error");
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    tenant.brand ||= {};
+    tenant.brand.pendingLogoDataUrl = String(reader.result || "");
+    document.getElementById("brand-logo-url").value = tenant.brand.pendingLogoDataUrl;
+    renderTenantLogo();
+    toast("Logomarca carregada. Clique em salvar identidade para persistir.", "info");
+  };
+  reader.onerror = () => toast("Nao foi possivel carregar a logomarca.", "error");
+  reader.readAsDataURL(file);
+}
+
 function renderTenantLogo() {
   const mark = document.getElementById("tenant-logo");
-  mark.innerHTML = tenant.brand?.logoUrl ? `<img src="${escapeAttr(tenant.brand.logoUrl)}" alt="">` : initials(tenant.name);
+  const logoUrl = tenant.brand?.pendingLogoDataUrl || tenant.brand?.logoUrl;
+  mark.innerHTML = logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="">` : initials(tenant.name);
+  document.documentElement.style.setProperty("--bg", tenant.brand?.bg || "#070b16");
   document.documentElement.style.setProperty("--primary", tenant.brand?.primary || "#d4af37");
+  document.documentElement.style.setProperty("--primary-strong", lightenHex(tenant.brand?.primary || "#d4af37", 22));
   document.documentElement.style.setProperty("--accent", tenant.brand?.accent || "#00d2ff");
 }
 
@@ -1109,6 +1159,7 @@ function companyFromSupabase(row, panel = {}) {
     marketplace: panel.marketplace || defaultMarketplace(),
     dashboardConfig: panel.dashboardConfig || defaultDashboardConfig(),
     instance: panel.instance || {},
+    integrations: panel.integrations || {},
     createdAt: row.criado_em || panel.createdAt || nowIso()
   };
   company.users = company.users.length ? company.users : [ownerUser(company)];
@@ -1132,6 +1183,7 @@ function panelDataFromTenant() {
     marketplace: tenant.marketplace || platform.modules,
     dashboardConfig: tenant.dashboardConfig || defaultDashboardConfig(),
     instance: tenant.instance || {},
+    integrations: tenant.integrations || {},
     updatedAt: nowIso()
   };
 }
@@ -1507,6 +1559,17 @@ function initials(name) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+function lightenHex(hex, percentage) {
+  const normalized = String(hex || "").replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return "#f6d365";
+  const number = parseInt(normalized, 16);
+  const amount = Math.round(255 * (percentage / 100));
+  const red = Math.min(255, (number >> 16) + amount);
+  const green = Math.min(255, ((number >> 8) & 255) + amount);
+  const blue = Math.min(255, (number & 255) + amount);
+  return `#${((1 << 24) + (red << 16) + (green << 8) + blue).toString(16).slice(1)}`;
 }
 
 function statusLabel(status) {
