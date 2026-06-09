@@ -1,0 +1,10 @@
+project_id = "hhyvtehbsfoeuagwhklm"
+
+[functions.provision-user]
+verify_jwt = false
+
+[functions.integrations-gateway]
+verify_jwt = true
+
+[functions.chatwoot-webhook]
+verify_jwt = false

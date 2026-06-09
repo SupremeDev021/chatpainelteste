@@ -55,6 +55,7 @@ const ICONS = {
   settings: "<path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z'/><circle cx='12' cy='12' r='3'/>",
   "shopping-bag": "<path d='M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z'/><path d='M3 6h18M16 10a4 4 0 0 1-8 0'/>",
   sparkles: "<path d='m12 3-1.9 4.7L5.5 9.5l4.6 1.8L12 16l1.9-4.7 4.6-1.8-4.6-1.8Z'/><path d='M5 3v4M3 5h4M19 15v6M16 18h6'/>",
+  tags: "<path d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z'/><circle cx='7.5' cy='7.5' r='.5' fill='currentColor'/><path d='m16 5 3 3'/>",
   target: "<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>",
   "user-round-plus": "<circle cx='8' cy='8' r='4'/><path d='M2 20a6 6 0 0 1 12 0'/><path d='M18 10v8M14 14h8'/>",
   "user-plus": "<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M19 8v6M22 11h-6'/>",
@@ -69,6 +70,9 @@ let activeModule = "dashboard";
 let activeConversationId = null;
 let agendaView = "day";
 let agendaCursor = new Date();
+let inboxPollTimer = null;
+let inboxSyncInFlight = false;
+const INBOX_POLL_MS = 15000;
 
 document.addEventListener("DOMContentLoaded", bootClient);
 
@@ -78,6 +82,7 @@ function bootClient() {
   on("logout-button", "click", logout);
   on("notifications-button", "click", openNotificationsModal);
   bindModuleEvents();
+  document.addEventListener("visibilitychange", handleVisibilityChange);
   restoreSession();
   registerServiceWorker();
 }
@@ -177,9 +182,11 @@ function startApp(company) {
   renderMenu();
   renderNotificationsBadge();
   setActiveModule(firstAllowedModule());
+  startInboxPolling();
 }
 
 function logout(record = true) {
+  stopInboxPolling();
   if (record && tenant) audit(tenant.id, "logout", "Logout realizado no Painel Camaleao");
   if (session?.auth?.accessToken) supabaseAuthSignOut(session.auth.accessToken).catch(console.error);
   session = null;
@@ -251,6 +258,7 @@ function setActiveModule(moduleKey) {
   document.querySelectorAll(".module").forEach(section => section.classList.toggle("active", section.id === `module-${moduleKey}`));
   document.querySelectorAll("#module-menu button").forEach(btn => btn.classList.toggle("active", btn.dataset.module === moduleKey));
   renderActiveModule();
+  if (moduleKey === "inbox") syncChatwootConversations({ silent: true, refreshActive: true });
 }
 
 function renderActiveModule() {
@@ -279,6 +287,7 @@ function bindModuleEvents() {
   on("sync-conversations-button", "click", syncChatwootConversations);
   on("new-conversation-button", "click", () => openConversationModal());
   on("quick-lead-button", "click", createLeadFromActiveConversation);
+  on("conversation-labels-button", "click", editConversationLabels);
   on("conversation-search", "input", renderInbox);
   on("conversation-filter", "change", renderInbox);
   on("message-form", "submit", sendMessage);
@@ -541,9 +550,10 @@ function openConversationModal() {
   });
 }
 
-function selectConversation(id) {
+async function selectConversation(id) {
   activeConversationId = id;
   renderConversation();
+  await refreshConversationMessages(id);
 }
 
 function renderConversation() {
@@ -558,12 +568,15 @@ function renderConversation() {
   setText("active-contact-name", conversation.contactName);
   const linkedLead = tenant.data.leads.find(item => item.id === conversation.leadId);
   setText("active-contact-meta", `${conversation.channel || "Canal"} - ${conversation.phone || "Sem telefone"}${linkedLead ? ` - Lead: ${linkedLead.name}` : ""}`);
-  document.getElementById("chat-history").innerHTML = conversation.messages.length ? conversation.messages.map(message => `
+  const history = document.getElementById("chat-history");
+  history.innerHTML = conversation.messages.length ? conversation.messages.map(message => `
     <div class="message ${message.type}">
-      ${escapeHtml(message.text)}
+      ${message.text ? `<div>${escapeHtml(message.text)}</div>` : ""}
+      ${renderMessageAttachments(message.attachments)}
       <small>${formatDate(message.createdAt)}</small>
     </div>
   `).join("") : "<div class='empty-state compact'>Nenhuma mensagem registrada.</div>";
+  history.scrollTop = history.scrollHeight;
   const button = document.getElementById("quick-lead-button");
   if (button) button.innerHTML = `${icon("sparkles")} ${linkedLead ? "Abrir lead" : "Criar lead"}`;
   renderConversationDetails(conversation, linkedLead);
@@ -589,8 +602,13 @@ async function sendMessage(event) {
   const text = value("message-input");
   if (!conversation || !text) return;
   const isInternalNote = document.getElementById("internal-note-toggle").checked;
-  if (conversation.provider === "chatwoot" && !isInternalNote) {
-    await sendChatwootMessage(conversation, text);
+  if (conversation.provider === "chatwoot") {
+    try {
+      await sendChatwootMessage(conversation, text, isInternalNote);
+    } catch (error) {
+      console.error(error);
+      toast(friendlyIntegrationMessage(error, "Mensagem nao enviada. Verifique a conexao da instancia."), "error");
+    }
     return;
   }
   conversation.messages.push({
@@ -604,11 +622,13 @@ async function sendMessage(event) {
   renderInbox();
 }
 
-async function syncChatwootConversations() {
+async function syncChatwootConversations(options = {}) {
+  if (inboxSyncInFlight || !tenant || !session?.auth?.accessToken) return;
+  inboxSyncInFlight = true;
   const button = document.getElementById("sync-conversations-button");
   if (button) button.disabled = true;
   try {
-    const result = await integrationsRequest("chatwoot.conversations", { status: "open", page: 1 });
+    const result = await integrationsRequest("chatwoot.conversations", { status: "all", maxPages: 20 });
     const synced = (result.conversations || []).map(normalizeExternalConversation);
     synced.forEach(item => upsertConversation(item));
     tenant.integrations ||= {};
@@ -616,19 +636,22 @@ async function syncChatwootConversations() {
     await persistTenant("chatwoot_synced", `${synced.length} conversas sincronizadas do Chatwoot`);
     activeConversationId ||= synced[0]?.id || null;
     renderInbox();
-    toast(`${synced.length} conversas sincronizadas do Chatwoot.`, "success");
+    if (options.refreshActive && activeConversationId) await refreshConversationMessages(activeConversationId, { silent: true });
+    if (!options.silent) toast(`${synced.length} conversas sincronizadas do Chatwoot.`, "success");
   } catch (error) {
     console.error(error);
-    toast("Nao foi possivel sincronizar o Chatwoot agora.", "error");
+    if (!options.silent) toast(friendlyIntegrationMessage(error, "Nao foi possivel carregar conversas."), "error");
   } finally {
+    inboxSyncInFlight = false;
     if (button) button.disabled = false;
   }
 }
 
-async function sendChatwootMessage(conversation, text) {
+async function sendChatwootMessage(conversation, text, isInternalNote = false) {
   const result = await integrationsRequest("chatwoot.sendMessage", {
     conversationId: conversation.externalId,
-    content: text
+    content: text,
+    private: isInternalNote
   });
   const message = normalizeExternalMessage(result.message) || {
     id: uid("msg"),
@@ -642,13 +665,14 @@ async function sendChatwootMessage(conversation, text) {
   document.getElementById("message-input").value = "";
   await persistTenant("chatwoot_message_sent", "Mensagem enviada pelo Chatwoot");
   renderInbox();
-  toast("Mensagem enviada pelo Chatwoot.", "success");
+  toast(isInternalNote ? "Nota interna registrada no Chatwoot." : "Mensagem enviada pelo Chatwoot.", "success");
 }
 
 function upsertConversation(item) {
   const index = tenant.data.conversations.findIndex(current => current.id === item.id || (item.externalId && current.externalId === item.externalId && current.provider === item.provider));
   if (index >= 0) {
-    tenant.data.conversations[index] = { ...tenant.data.conversations[index], ...item };
+    const current = tenant.data.conversations[index];
+    tenant.data.conversations[index] = { ...current, ...item, messages: mergeMessages(current.messages, item.messages) };
   } else {
     tenant.data.conversations.unshift(item);
     maybeAutoCreateLeadFromConversation(item);
@@ -671,16 +695,105 @@ function normalizeExternalMessage(message) {
     externalId: message.externalId || "",
     type: message.from === "agent" ? "out" : message.from === "note" ? "note" : "in",
     text: message.content || message.text || "",
+    attachments: message.attachments || [],
+    status: message.status || null,
     createdAt: message.createdAt || nowIso()
   };
 }
 
-function resolveConversation() {
+async function resolveConversation() {
   const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
   if (!conversation) return;
-  conversation.status = "resolved";
-  persistTenant("conversation_resolved", "Conversa resolvida");
-  renderInbox();
+  try {
+    if (conversation.provider === "chatwoot") {
+      await integrationsRequest("chatwoot.setStatus", { conversationId: conversation.externalId, status: "resolved" });
+    }
+    conversation.status = "resolved";
+    await persistTenant("conversation_resolved", "Conversa resolvida");
+    renderInbox();
+    toast("Conversa resolvida.", "success");
+  } catch (error) {
+    console.error(error);
+    toast(friendlyIntegrationMessage(error, "Nao foi possivel resolver a conversa."), "error");
+  }
+}
+
+async function refreshConversationMessages(id, options = {}) {
+  const conversation = tenant?.data?.conversations?.find(item => item.id === id);
+  if (!conversation || conversation.provider !== "chatwoot" || !conversation.externalId) return;
+  try {
+    const result = await integrationsRequest("chatwoot.messages", { conversationId: conversation.externalId });
+    conversation.messages = mergeMessages(conversation.messages, (result.messages || []).map(normalizeExternalMessage).filter(Boolean));
+    if (result.labels?.length) conversation.labels = result.labels;
+    conversation.updatedAt = result.syncedAt || conversation.updatedAt;
+    renderConversation();
+  } catch (error) {
+    console.error(error);
+    if (!options.silent) toast(friendlyIntegrationMessage(error, "Nao foi possivel carregar mensagens."), "error");
+  }
+}
+
+function mergeMessages(current = [], incoming = []) {
+  const merged = new Map();
+  [...current, ...incoming].filter(Boolean).forEach(message => merged.set(String(message.externalId || message.id), message));
+  return [...merged.values()].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+}
+
+function renderMessageAttachments(attachments = []) {
+  return attachments.map(attachment => {
+    const url = escapeAttr(safeExternalUrl(attachment.url));
+    if (!url) return "";
+    if (/image/i.test(attachment.type)) return `<a class="message-attachment" href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="Imagem recebida"></a>`;
+    if (/audio/i.test(attachment.type)) return `<audio class="message-attachment" controls preload="none" src="${url}"></audio>`;
+    return `<a class="message-file" href="${url}" target="_blank" rel="noopener">${escapeHtml(attachment.name || "Abrir arquivo")}</a>`;
+  }).join("");
+}
+
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function editConversationLabels() {
+  const conversation = tenant.data.conversations.find(item => item.id === activeConversationId);
+  if (!conversation) return toast("Selecione uma conversa.", "error");
+  openFormModal("Etiquetas da conversa", [
+    inputField("labels", "Etiquetas separadas por virgula", (conversation.labels || []).join(", "), "text", false)
+  ], async values => {
+    const labels = splitTags(values.labels);
+    if (conversation.provider === "chatwoot") {
+      const result = await integrationsRequest("chatwoot.setLabels", { conversationId: conversation.externalId, labels });
+      conversation.labels = result.labels || labels;
+    } else {
+      conversation.labels = labels;
+    }
+    await persistTenant("conversation_labels_changed", "Etiquetas da conversa atualizadas");
+    renderInbox();
+  });
+}
+
+function startInboxPolling() {
+  stopInboxPolling();
+  inboxPollTimer = setInterval(() => {
+    if (document.visibilityState === "visible" && activeModule === "inbox") {
+      syncChatwootConversations({ silent: true, refreshActive: true });
+    }
+  }, INBOX_POLL_MS);
+}
+
+function stopInboxPolling() {
+  if (inboxPollTimer) clearInterval(inboxPollTimer);
+  inboxPollTimer = null;
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible" && tenant && activeModule === "inbox") {
+    syncChatwootConversations({ silent: true, refreshActive: true });
+  }
 }
 
 function renderCrm() {
@@ -785,7 +898,7 @@ function openLeadModal(id, prefill = {}, quick = false) {
     ...(rules.length ? [selectField("stageId", "Etapa", rules.map(stage => ({ value: stage.id, label: stage.name })), current?.stageId || prefill.stageId || rules[0]?.id)] : []),
     inputField("source", "Origem", current?.source || prefill.source || prefill.channel || "", "text", false),
     inputField("tags", "Etiquetas", (current?.tags || prefill.tags || []).join(", "), "text", false)
-  ], values => {
+  ], async values => {
     const route = resolveRoutingForLabels(splitTags(values.tags), pipeline);
     const lead = upsert(tenant.data.leads, {
       id,
@@ -799,8 +912,9 @@ function openLeadModal(id, prefill = {}, quick = false) {
       createdAt: current?.createdAt || nowIso(),
       owner: current?.owner || prefill.owner || session?.userId || ""
     });
-    persistTenant("lead_saved", "Lead salvo");
+    await persistTenant("lead_saved", "Lead salvo");
     if (prefill.conversationId) associateLeadToConversation(lead.id, prefill.conversationId);
+    await syncOperationalLead(lead, current ? "lead_atualizado" : "novo_lead");
     renderCrm();
     renderDashboard();
   });
@@ -922,9 +1036,10 @@ function openAppointmentModal(id) {
     inputField("time", "Hora", current?.time || "09:00", "time"),
     inputField("responsible", "Responsavel", current?.responsible),
     selectField("status", "Status", ["pending", "confirmed", "done", "cancelled"], current?.status)
-  ], values => {
-    upsert(tenant.data.appointments, { id, ...values });
-    persistTenant("appointment_saved", "Agendamento salvo");
+  ], async values => {
+    const appointment = upsert(tenant.data.appointments, { id, ...values });
+    await persistTenant("appointment_saved", "Agendamento salvo");
+    await syncOperationalAppointment(appointment, current ? "agendamento_atualizado" : "agendamento_criado");
     renderAgenda();
   });
 }
@@ -1610,6 +1725,13 @@ async function supabaseAuthSignIn(email, password) {
   });
 }
 
+async function supabaseAuthRefresh(refreshToken) {
+  return supabaseAuthRequest("/auth/v1/token?grant_type=refresh_token", {
+    method: "POST",
+    body: { refresh_token: refreshToken }
+  });
+}
+
 async function supabaseAuthSignOut(accessToken) {
   return supabaseAuthRequest("/auth/v1/logout", {
     method: "POST",
@@ -1660,11 +1782,12 @@ async function supabaseFunctionRequest(name, options = {}) {
 }
 
 async function integrationsRequest(action, payload = {}) {
-  if (!session?.auth?.accessToken) {
+  const accessToken = await ensureAuthAccessToken();
+  if (!accessToken) {
     throw new Error("Sessao Supabase Auth necessaria para usar integracoes.");
   }
   return supabaseFunctionRequest("integrations-gateway", {
-    authToken: session.auth.accessToken,
+    authToken: accessToken,
     body: {
       action,
       payload: {
@@ -1673,6 +1796,76 @@ async function integrationsRequest(action, payload = {}) {
       }
     }
   });
+}
+
+async function syncOperationalLead(lead, eventName = "lead_atualizado") {
+  const accessToken = await ensureAuthAccessToken();
+  if (!accessToken || !tenant || !lead) return;
+  const conversation = tenant.data.conversations.find(item => item.id === lead.conversationId || item.leadId === lead.id);
+  const stage = stageName(lead.pipelineId, lead.stageId);
+  await supabaseRequest("/rest/v1/company_leads?on_conflict=company_id,local_ref", {
+    method: "POST",
+    authToken: accessToken,
+    prefer: "resolution=merge-duplicates,return=minimal",
+    body: {
+      company_id: Number(tenant.id),
+      local_ref: String(lead.id),
+      contact_id: String(conversation?.contactId || ""),
+      conversation_id: String(conversation?.externalId || ""),
+      name: lead.name,
+      phone: lead.phone || "",
+      email: lead.email || "",
+      source: lead.source || conversation?.channel || "Painel Supreme",
+      stage,
+      status: lead.status || "open",
+      tags: lead.tags || [],
+      assigned_to: String(lead.owner || ""),
+      last_message: conversation?.lastMessage || "",
+      last_interaction_at: conversation?.updatedAt || nowIso(),
+      updated_at: nowIso()
+    }
+  });
+  await integrationsRequest("automation.event", { event: eventName, data: { lead_ref: lead.id, name: lead.name, phone: lead.phone || "", stage } }).catch(console.error);
+}
+
+async function syncOperationalAppointment(appointment, eventName = "agendamento_criado") {
+  const accessToken = await ensureAuthAccessToken();
+  if (!accessToken || !tenant || !appointment) return;
+  await supabaseRequest("/rest/v1/company_appointments?on_conflict=company_id,local_ref", {
+    method: "POST",
+    authToken: accessToken,
+    prefer: "resolution=merge-duplicates,return=minimal",
+    body: {
+      company_id: Number(tenant.id),
+      local_ref: String(appointment.id),
+      customer_name: appointment.title,
+      appointment_date: appointment.date,
+      appointment_time: appointment.time,
+      assigned_to: appointment.responsible || "",
+      status: appointment.status || "pending",
+      source: "painelsupreme",
+      updated_at: nowIso()
+    }
+  });
+  await integrationsRequest("automation.event", { event: eventName, data: { appointment_ref: appointment.id, date: appointment.date, time: appointment.time, status: appointment.status } }).catch(console.error);
+}
+
+async function ensureAuthAccessToken() {
+  if (!session?.auth?.accessToken) return null;
+  const expiresAtMs = Number(session.auth.expiresAt || 0) * 1000;
+  if (!expiresAtMs || expiresAtMs - Date.now() > 60000) return session.auth.accessToken;
+  if (!session.auth.refreshToken) return session.auth.accessToken;
+  const refreshed = await supabaseAuthRefresh(session.auth.refreshToken);
+  session.auth = normalizeAuthSession(refreshed);
+  saveSession();
+  return session.auth?.accessToken || null;
+}
+
+function friendlyIntegrationMessage(error, fallback) {
+  const message = String(error?.message || "");
+  if (/token|sessao|401/i.test(message)) return "Token invalido ou expirado. Entre novamente.";
+  if (/conect|fetch|network|instancia/i.test(message)) return "Integracao desconectada. Verifique a conexao da instancia.";
+  return message || fallback;
 }
 
 function openFormModal(title, fields, onSubmit, extraActions = []) {

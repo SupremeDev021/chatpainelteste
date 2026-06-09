@@ -31,3 +31,13 @@ Depois que um usuario for provisionado no Auth, o painel limpa a senha local des
 ## Seguranca
 
 A chave service role deve existir apenas nos secrets da Edge Function. Nunca coloque service role em `app.js`, HTML, N8N publico ou navegador.
+
+## Integracoes operacionais
+
+- `integrations-gateway`: proxy autenticado e isolado por empresa para Chatwoot, Evolution API e n8n.
+- `chatwoot-webhook`: recebe eventos em tempo real do Chatwoot, registra logs e encaminha automacoes.
+- `company_integrations`: configuracao tecnica por empresa; tokens ficam acessiveis apenas pelo backend.
+- `integration_logs` e `automation_events`: diagnostico e fila de eventos.
+- `company_leads`, `company_appointments` e `company_labels`: base operacional normalizada com RLS por empresa.
+
+O gateway valida o `company_id` pelo perfil autenticado e rejeita qualquer identificador de outra empresa. O webhook publico usa segredo proprio e deve permanecer com `verify_jwt = false`; a validacao acontece dentro da funcao.

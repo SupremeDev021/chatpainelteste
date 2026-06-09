@@ -1,4 +1,4 @@
-const CACHE_NAME = "supreme-platform-client-v9";
+const CACHE_NAME = "supreme-platform-client-v10";
 const CORE_ASSETS = [
   "./index.html",
   "./crm.css",
